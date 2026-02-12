@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="PortfolioCMS.Server.Api/PortfolioCMS.Server.Api.csproj" />
+  <Project Path="PortfolioCMS.Server.Application/PortfolioCMS.Server.Application.csproj" />
+  <Project Path="PortfolioCMS.Server.Domain/PortfolioCMS.Server.Domain.csproj" />
+  <Project Path="PortfolioCMS.Server.Infrastructure/PortfolioCMS.Server.Infrastructure.csproj" />
+</Solution>
