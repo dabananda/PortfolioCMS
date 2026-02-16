@@ -4,8 +4,8 @@ namespace PortfolioCMS.Server.Domain.Entities
 {
     public class SocialLink : BaseEntity
     {
-        public String Name { get; set; } = String.Empty;
-        public String Link { get; set; } = String.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Link { get; set; } = string.Empty;
         public Guid UserId { get; set; }
         public ApplicationUser? User { get; set; }
     }

@@ -7,10 +7,10 @@ namespace PortfolioCMS.Server.Domain.Entities
         public Guid UserId { get; set; }
         public ApplicationUser? User { get; set; }
         public DateOnly DateOfBirth { get; set; }
-        public String Status { get; set; } = String.Empty;
-        public String HeadLine { get; set; } = String.Empty;
-        public String ImageUrl { get; set; } = String.Empty;
-        public String ResumeUrl { get; set; } = String.Empty;
-        public String? Location { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string HeadLine { get; set; } = string.Empty;
+        public string ImageUrl { get; set; } = string.Empty;
+        public string ResumeUrl { get; set; } = string.Empty;
+        public string? Location { get; set; }
     }
 }

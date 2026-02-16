@@ -2,14 +2,13 @@
 
 namespace PortfolioCMS.Server.Domain.Entities
 {
-    public class WorkExperience : BaseEntity
+    public class ExtraCurricularActivity : BaseEntity
     {
-        public string CompanyName { get; set; } = string.Empty;
-        public string? CompanyDescription { get; set;}
-        public string Role { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Organization { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
         public DateOnly StartDate { get; set; }
         public DateOnly? EndDate { get; set; }
-        public string? WorkDescription { get; set; }
         public Guid UserId { get; set; }
         public ApplicationUser? User { get; set; }
     }

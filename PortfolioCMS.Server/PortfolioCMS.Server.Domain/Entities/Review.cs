@@ -2,12 +2,12 @@
 
 namespace PortfolioCMS.Server.Domain.Entities
 {
-    public class Reviews : BaseEntity
+    public class Review : BaseEntity
     {
-        public String Name { get; set; } = String.Empty;
-        public String Review { get; set; } = String.Empty;
-        public String? Designation { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Designation { get; set; }
         public double Rating { get; set; }
+        public string Comment { get; set; } = string.Empty;
         public Guid UserId { get; set; }
         public ApplicationUser? User { get; set; }
     }

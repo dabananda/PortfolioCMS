@@ -4,7 +4,7 @@ namespace PortfolioCMS.Server.Domain.Entities
 {
     public class ApplicationUser : IdentityUser<Guid>
     {
-        public String FirstName { get; set; } = String.Empty;
-        public String LastName { get; set; } = String.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
     }
 }

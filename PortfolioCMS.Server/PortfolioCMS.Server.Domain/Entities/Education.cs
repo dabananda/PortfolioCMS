@@ -4,12 +4,13 @@ namespace PortfolioCMS.Server.Domain.Entities
 {
     public class Education : BaseEntity
     {
-        public String InstituteName { get; set; } = String.Empty;
-        public String Department { get; set; } = String.Empty;
-        public String CGPA { get; set; } = String.Empty;
+        public string InstituteName { get; set; } = string.Empty;
+        public string Department { get; set; } = string.Empty;
+        public decimal CGPA { get; set; }
+        public decimal Scale { get; set; }
         public DateOnly StartDate { get; set; }
         public DateOnly? EndDate { get; set; }
-        public String InstituteLocation { get; set; } = String.Empty;
+        public string InstituteLocation { get; set; } = string.Empty;
         public Guid UserId { get; set; }
         public ApplicationUser? User { get; set; }
     }

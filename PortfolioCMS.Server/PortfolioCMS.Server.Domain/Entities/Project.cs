@@ -4,12 +4,12 @@ namespace PortfolioCMS.Server.Domain.Entities
 {
     public class Project : BaseEntity
     {
-        public String Title { get; set; } = String.Empty;
-        public String Description { get; set; } = String.Empty;
-        public List<String> Technologies { get; set; } = [];
-        public String? GitHubUrl { get; set; }
-        public String? LiveUrl { get; set; }
-        public String? ImageUrl { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public List<string> Technologies { get; set; } = [];
+        public string? GitHubUrl { get; set; }
+        public string? LiveUrl { get; set; }
+        public string? ImageUrl { get; set; }
         public Guid UserId { get; set; }
         public ApplicationUser? User { get; set; }
     }

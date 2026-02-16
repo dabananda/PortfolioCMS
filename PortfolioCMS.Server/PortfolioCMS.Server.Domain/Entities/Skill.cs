@@ -2,9 +2,9 @@
 
 namespace PortfolioCMS.Server.Domain.Entities
 {
-    public class Skills : BaseEntity
+    public class Skill : BaseEntity
     {
-        public String SkillName { get; set; } = String.Empty;
+        public string SkillName { get; set; } = string.Empty;
         public Guid UserId { get; set; }
         public ApplicationUser? User { get; set; }
     }
