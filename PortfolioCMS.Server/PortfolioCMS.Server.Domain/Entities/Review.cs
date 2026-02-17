@@ -6,7 +6,7 @@ namespace PortfolioCMS.Server.Domain.Entities
     {
         public string Name { get; set; } = string.Empty;
         public string? Designation { get; set; }
-        public double Rating { get; set; }
+        public decimal Rating { get; set; }
         public string Comment { get; set; } = string.Empty;
         public Guid UserId { get; set; }
         public ApplicationUser? User { get; set; }

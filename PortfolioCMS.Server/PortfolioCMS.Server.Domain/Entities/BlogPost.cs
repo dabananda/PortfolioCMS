@@ -5,7 +5,7 @@ namespace PortfolioCMS.Server.Domain.Entities
     public class BlogPost : BaseEntity
     {
         public string Title { get; set; } = string.Empty;
-        public string Post { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
         public Guid BlogPostCategoryId { get; set; }
         public BlogPostCategory? BlogPostCategory { get; set; }
