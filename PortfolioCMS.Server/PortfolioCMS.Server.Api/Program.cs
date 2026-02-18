@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using PortfolioCMS.Server.Api.Middleware;
 using PortfolioCMS.Server.Domain.Common;
@@ -7,6 +8,7 @@ using PortfolioCMS.Server.Infrastructure;
 using PortfolioCMS.Server.Infrastructure.Data;
 using Serilog;
 using Serilog.Events;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +33,18 @@ builder.Host.UseSerilog();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Rate limiting — 10 requests per minute for auth endpoints to mitigate brute-force attacks
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("auth", opt =>
+    {
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 0;
+    });
+});
 
 var app = builder.Build();
 

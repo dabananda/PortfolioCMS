@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using PortfolioCMS.Server.Application.DTOs.Auth;
 using PortfolioCMS.Server.Application.Interfaces;
 
 namespace PortfolioCMS.Server.Api.Controllers
 {
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public class AuthController : BaseController
     {
         private readonly IAuthService _authService;
