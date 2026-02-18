@@ -9,8 +9,9 @@ namespace PortfolioCMS.Server.Domain.Entities
         public DateOnly DateOfBirth { get; set; }
         public UserStatus Status { get; set; } = UserStatus.Available;
         public string HeadLine { get; set; } = string.Empty;
-        public string ImageUrl { get; set; } = string.Empty;
-        public string ResumeUrl { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
+        public string? ResumeUrl { get; set; }
+
         public string? Location { get; set; }
     }
 }

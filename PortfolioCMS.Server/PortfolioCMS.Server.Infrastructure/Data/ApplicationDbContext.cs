@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PortfolioCMS.Server.Application.Interfaces;
 using PortfolioCMS.Server.Domain.Common;
 using PortfolioCMS.Server.Domain.Entities;
+using System.Linq.Expressions;
 
 namespace PortfolioCMS.Server.Infrastructure.Data
 {
@@ -27,6 +28,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
         public DbSet<ExtraCurricularActivity> ExtraCurricularActivities { get; set; }
         public DbSet<ProblemSolving> ProblemSolvings { get; set; }
         public DbSet<Project> Projects { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Review> Reviews { get; set; }
         public DbSet<Skill> Skills { get; set; }
         public DbSet<SocialLink> SocialLinks { get; set; }
@@ -39,6 +41,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             base.OnModelCreating(modelBuilder);
 
             ConfigureQueryFilters(modelBuilder);
+            ConfigureRefreshToken(modelBuilder);
             ConfigureBlogPost(modelBuilder);
             ConfigureBlogPostCategory(modelBuilder);
             ConfigureCertification(modelBuilder);
@@ -56,7 +59,6 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             ConfigureWorkExperience(modelBuilder);
         }
 
-        // Audit fields
         public override int SaveChanges()
         {
             ApplyAuditFields();
@@ -87,38 +89,68 @@ namespace PortfolioCMS.Server.Infrastructure.Data
                     entry.Entity.UpdatedBy = currentUserId;
                 }
             }
-        }
 
-        // Soft delete global query filters
+            foreach (var entry in ChangeTracker.Entries<ConfigEntity>())
+            {
+                if (entry.State == EntityState.Added)
+                    entry.Entity.CreatedAt = DateTime.UtcNow;
+
+                if (entry.State == EntityState.Modified)
+                    entry.Entity.UpdatedAt = DateTime.UtcNow;
+            }
+        }
 
         private static void ConfigureQueryFilters(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<BlogPost>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<BlogPostCategory>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<Certification>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<ContactMessage>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<CorsSetting>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<Education>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<ExtraCurricularActivity>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<ProblemSolving>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<Project>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<Review>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<Skill>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<SocialLink>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<SystemSetting>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<UserProfile>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<WorkExperience>().HasQueryFilter(e => !e.IsDeleted);
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                if (!typeof(BaseEntity).IsAssignableFrom(entityType.ClrType)) continue;
+
+                var param = Expression.Parameter(entityType.ClrType, "e");
+                var prop = Expression.Property(param, nameof(BaseEntity.IsDeleted));
+                var filter = Expression.Lambda(Expression.Not(prop), param);
+
+                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
+            }
         }
 
         // Entity configurations
+        private static void ConfigureRefreshToken(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<RefreshToken>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
+                entity.Property(e => e.Token).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.ReplacedByToken).HasMaxLength(500);
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.Token)
+                    .IsUnique()
+                    .HasDatabaseName("IX_RefreshTokens_Token");
+
+                entity.HasIndex(e => e.UserId)
+                    .HasDatabaseName("IX_RefreshTokens_UserId");
+
+                entity.HasIndex(e => e.ExpiresAt)
+                    .HasDatabaseName("IX_RefreshTokens_ExpiresAt");
+            });
+        }
 
         private static void ConfigureBlogPost(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<BlogPost>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
                 entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Slug).IsRequired().HasMaxLength(250);
+                entity.Property(e => e.Summary).HasMaxLength(500);
                 entity.Property(e => e.Content).IsRequired();
                 entity.Property(e => e.ImageUrl).HasMaxLength(500);
                 entity.Property(e => e.CreatedAt).IsRequired().HasDefaultValueSql("GETUTCDATE()");
@@ -129,7 +161,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.BlogPostCategory)
-                    .WithMany()
+                    .WithMany(c => c.BlogPosts)
                     .HasForeignKey(e => e.BlogPostCategoryId)
                     .OnDelete(DeleteBehavior.Restrict);
 
@@ -137,6 +169,12 @@ namespace PortfolioCMS.Server.Infrastructure.Data
                 entity.HasIndex(e => e.BlogPostCategoryId).HasDatabaseName("IX_BlogPosts_BlogPostCategoryId");
                 entity.HasIndex(e => e.CreatedAt).HasDatabaseName("IX_BlogPosts_CreatedAt");
                 entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_BlogPosts_IsDeleted");
+                entity.HasIndex(e => e.IsPublished).HasDatabaseName("IX_BlogPosts_IsPublished");
+
+                entity.HasIndex(e => new { e.Slug, e.UserId })
+                    .IsUnique()
+                    .HasFilter("[IsDeleted] = 0")
+                    .HasDatabaseName("IX_BlogPosts_Slug_UserId_Unique");
             });
         }
 
@@ -145,6 +183,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             modelBuilder.Entity<BlogPostCategory>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Description).HasMaxLength(500);
@@ -169,6 +208,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             modelBuilder.Entity<Certification>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
                 entity.Property(e => e.CertificationName).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.IssuingOrganization).IsRequired().HasMaxLength(200);
@@ -191,6 +231,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             modelBuilder.Entity<ContactMessage>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
                 entity.Property(e => e.FullName).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Email).IsRequired().HasMaxLength(256);
@@ -206,6 +247,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
                 entity.HasIndex(e => e.UserId).HasDatabaseName("IX_ContactMessages_UserId");
                 entity.HasIndex(e => e.CreatedAt).HasDatabaseName("IX_ContactMessages_CreatedAt");
                 entity.HasIndex(e => e.Email).HasDatabaseName("IX_ContactMessages_Email");
+                entity.HasIndex(e => e.IsRead).HasDatabaseName("IX_ContactMessages_IsRead");
             });
         }
 
@@ -214,7 +256,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             modelBuilder.Entity<CorsSetting>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.AllowedOrigins).IsRequired().HasMaxLength(1000);
+                entity.Property(e => e.AllowedOrigins).IsRequired().HasMaxLength(2000);
                 entity.Property(e => e.CreatedAt).IsRequired().HasDefaultValueSql("GETUTCDATE()");
             });
         }
@@ -224,6 +266,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             modelBuilder.Entity<Education>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
                 entity.Property(e => e.InstituteName).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Department).IsRequired().HasMaxLength(200);
@@ -247,6 +290,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             modelBuilder.Entity<ExtraCurricularActivity>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
                 entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Organization).IsRequired().HasMaxLength(200);
@@ -268,6 +312,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             modelBuilder.Entity<ProblemSolving>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
                 entity.Property(e => e.JudgeName).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Rank).HasMaxLength(50);
@@ -294,14 +339,20 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             modelBuilder.Entity<Project>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
                 entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Description).IsRequired().HasMaxLength(2000);
-                entity.Property(e => e.Technologies).HasMaxLength(1000);
                 entity.Property(e => e.GitHubUrl).HasMaxLength(500);
                 entity.Property(e => e.LiveUrl).HasMaxLength(500);
                 entity.Property(e => e.ImageUrl).HasMaxLength(500);
                 entity.Property(e => e.CreatedAt).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+
+                entity.Property(e => e.Technologies)
+                    .HasColumnType("nvarchar(max)")
+                    .HasConversion(
+                        v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                        v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new());
 
                 entity.HasOne(e => e.User)
                     .WithMany(u => u.Projects)
@@ -318,6 +369,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             modelBuilder.Entity<Review>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Designation).HasMaxLength(100);
@@ -343,8 +395,14 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             modelBuilder.Entity<Skill>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
                 entity.Property(e => e.SkillName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Category).HasMaxLength(100);
+                entity.Property(e => e.Proficiency)
+                    .IsRequired()
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
                 entity.Property(e => e.CreatedAt).IsRequired().HasDefaultValueSql("GETUTCDATE()");
 
                 entity.HasOne(e => e.User)
@@ -366,6 +424,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             modelBuilder.Entity<SocialLink>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Link).IsRequired().HasMaxLength(500);
@@ -394,7 +453,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
                 entity.Property(e => e.SmtpHost).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.SmtpPort).IsRequired();
                 entity.Property(e => e.SmtpUser).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.SmtpPass).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.SmtpPassEncrypted).IsRequired().HasMaxLength(1000);
                 entity.Property(e => e.SenderName).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.SenderEmail).IsRequired().HasMaxLength(256);
                 entity.Property(e => e.CreatedAt).IsRequired().HasDefaultValueSql("GETUTCDATE()");
@@ -406,6 +465,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             modelBuilder.Entity<UserProfile>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
                 entity.Property(e => e.Status)
                     .IsRequired()
@@ -413,8 +473,8 @@ namespace PortfolioCMS.Server.Infrastructure.Data
                     .HasMaxLength(50);
 
                 entity.Property(e => e.HeadLine).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.ImageUrl).IsRequired().HasMaxLength(500);
-                entity.Property(e => e.ResumeUrl).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.ImageUrl).HasMaxLength(500);
+                entity.Property(e => e.ResumeUrl).HasMaxLength(500);
                 entity.Property(e => e.Location).HasMaxLength(200);
                 entity.Property(e => e.CreatedAt).IsRequired().HasDefaultValueSql("GETUTCDATE()");
 
@@ -434,6 +494,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
             modelBuilder.Entity<WorkExperience>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
 
                 entity.Property(e => e.CompanyName).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.CompanyDescription).HasMaxLength(1000);

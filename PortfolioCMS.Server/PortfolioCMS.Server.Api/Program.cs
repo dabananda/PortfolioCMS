@@ -1,18 +1,12 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 using PortfolioCMS.Server.Api.Middleware;
-using PortfolioCMS.Server.Domain.Common;
-using PortfolioCMS.Server.Domain.Entities;
 using PortfolioCMS.Server.Infrastructure;
 using PortfolioCMS.Server.Infrastructure.Data;
 using Serilog;
 using Serilog.Events;
-using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Serilog — configure
+// Serilog configuration
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
@@ -29,141 +23,24 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// Services
+// Services configuration
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Rate limiting — 10 requests per minute for auth endpoints to mitigate brute-force attacks
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddFixedWindowLimiter("auth", opt =>
-    {
-        opt.PermitLimit = 10;
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 0;
-    });
-});
-
 var app = builder.Build();
 
-// Seeding — roles
+// Database seeding
 using (var scope = app.Services.CreateScope())
 {
-    try
-    {
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-
-        if (!await roleManager.RoleExistsAsync(Role.Admin))
-            await roleManager.CreateAsync(new IdentityRole<Guid>(Role.Admin));
-
-        if (!await roleManager.RoleExistsAsync(Role.User))
-            await roleManager.CreateAsync(new IdentityRole<Guid>(Role.User));
-
-        Log.Information("Role seeding completed.");
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "An error occurred while seeding roles.");
-    }
-}
-
-// Seeding — default admin user
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-        var adminSection = config.GetSection("AdminUser");
-
-        var email = adminSection["Email"] ?? throw new InvalidOperationException("AdminUser:Email is not configured.");
-        var password = adminSection["Password"] ?? throw new InvalidOperationException("AdminUser:Password is not configured.");
-        var firstName = adminSection["FirstName"] ?? "Admin";
-        var lastName = adminSection["LastName"] ?? "User";
-
-        var existingAdmin = await userManager.FindByEmailAsync(email);
-        if (existingAdmin == null)
-        {
-            var adminUser = new ApplicationUser
-            {
-                UserName = email,
-                Email = email,
-                FirstName = firstName,
-                LastName = lastName,
-                EmailConfirmed = true
-            };
-
-            var result = await userManager.CreateAsync(adminUser, password);
-            if (result.Succeeded)
-            {
-                await userManager.AddToRoleAsync(adminUser, Role.Admin);
-                Log.Information("Default admin user seeded: {Email}", email);
-            }
-            else
-            {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                Log.Error("Failed to seed admin user: {Errors}", errors);
-            }
-        }
-        else
-        {
-            Log.Information("Admin user already exists, skipping seed.");
-        }
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "An error occurred while seeding the admin user.");
-    }
-}
-
-// Seeding — system settings and CORS settings (only if tables are empty)
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-
-        if (!await db.SystemSettings.AnyAsync())
-        {
-            var emailSection = config.GetSection("EmailSettings");
-            db.SystemSettings.Add(new SystemSetting
-            {
-                SmtpHost = emailSection["SmtpServer"] ?? "smtp.gmail.com",
-                SmtpPort = emailSection.GetValue<int>("SmtpPort", 587),
-                SmtpUser = emailSection["SmtpUsername"] ?? string.Empty,
-                SmtpPass = emailSection["SmtpPassword"] ?? string.Empty,
-                SenderName = emailSection["FromName"] ?? "PortfolioCMS",
-                SenderEmail = emailSection["FromEmail"] ?? string.Empty,
-                EnableSsl = emailSection.GetValue<bool>("EnableSsl", true),
-            });
-            Log.Information("SystemSettings seeded from configuration.");
-        }
-
-        if (!await db.CorsSettings.AnyAsync())
-        {
-            var origins = config.GetSection("CorsSettings:AllowedOrigins").Get<string[]>() ?? [];
-            db.CorsSettings.Add(new CorsSetting
-            {
-                AllowedOrigins = string.Join(",", origins)
-            });
-            Log.Information("CorsSettings seeded from configuration.");
-        }
-
-        await db.SaveChangesAsync();
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "An error occurred while seeding initial settings.");
-    }
+    await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
 }
 
 // Middleware pipeline
 app.UseMiddleware<ExceptionMiddleware>();
 
-// Structured HTTP request/response logging (Serilog)
+app.UseRateLimiter();
+
 app.UseSerilogRequestLogging(options =>
 {
     options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";

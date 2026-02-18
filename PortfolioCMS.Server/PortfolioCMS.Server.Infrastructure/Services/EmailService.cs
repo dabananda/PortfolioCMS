@@ -13,41 +13,47 @@ namespace PortfolioCMS.Server.Infrastructure.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IMemoryCache _cache;
+        private readonly IEncryptionService _encryption;
         private const string CacheKey = "SystemSettings";
 
-        public EmailService(ApplicationDbContext context, IMemoryCache cache)
+        public EmailService(
+            ApplicationDbContext context,
+            IMemoryCache cache,
+            IEncryptionService encryption)
         {
             _context = context;
             _cache = cache;
+            _encryption = encryption;
         }
 
         public async Task SendEmailAsync(string to, string subject, string htmlMessage)
         {
-            if (!_cache.TryGetValue(CacheKey, out SystemSetting? emailSettings))
+            if (!_cache.TryGetValue(CacheKey, out SystemSetting? settings))
             {
-                emailSettings = await _context.SystemSettings.FirstOrDefaultAsync()
-                    ?? throw new InvalidOperationException("Email settings are not configured. Please set them up in the admin panel.");
+                settings = await _context.SystemSettings.FirstOrDefaultAsync()
+                    ?? throw new InvalidOperationException(
+                        "Email settings are not configured. Please set them up in the admin panel.");
 
-                _cache.Set(CacheKey, emailSettings, TimeSpan.FromMinutes(10));
+                _cache.Set(CacheKey, settings, TimeSpan.FromMinutes(10));
             }
 
+            var smtpPassword = _encryption.Decrypt(settings!.SmtpPassEncrypted);
+
             var email = new MimeMessage();
-            email.From.Add(new MailboxAddress(emailSettings!.SenderName, emailSettings.SenderEmail));
+            email.From.Add(new MailboxAddress(settings.SenderName, settings.SenderEmail));
             email.To.Add(MailboxAddress.Parse(to));
             email.Subject = subject;
-
-            var builder = new BodyBuilder { HtmlBody = htmlMessage };
-            email.Body = builder.ToMessageBody();
+            email.Body = new BodyBuilder { HtmlBody = htmlMessage }.ToMessageBody();
 
             using var smtp = new SmtpClient();
             try
             {
                 await smtp.ConnectAsync(
-                    emailSettings.SmtpHost,
-                    emailSettings.SmtpPort,
-                    emailSettings.EnableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto);
+                    settings.SmtpHost,
+                    settings.SmtpPort,
+                    settings.EnableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto);
 
-                await smtp.AuthenticateAsync(emailSettings.SmtpUser, emailSettings.SmtpPass);
+                await smtp.AuthenticateAsync(settings.SmtpUser, smtpPassword);
                 await smtp.SendAsync(email);
             }
             finally

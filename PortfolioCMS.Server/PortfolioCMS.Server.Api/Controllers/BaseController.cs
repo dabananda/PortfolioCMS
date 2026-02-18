@@ -14,8 +14,7 @@ namespace PortfolioCMS.Server.Api.Controllers
 
         protected IActionResult ApiCreated<T>(T data, string message = "Resource created successfully.")
             => StatusCode(201, ApiResponse<T>.Created(data, message));
-
-        protected IActionResult ApiNoContent(string message = "Request successful.")
+        protected IActionResult ApiOkMessage(string message = "Request successful.")
             => Ok(ApiResponse.OkNoData(message));
     }
 }

@@ -9,5 +9,6 @@ namespace PortfolioCMS.Server.Application.Interfaces
         Task ConfirmEmailAsync(string userId, string token);
         Task ForgotPasswordAsync(string email);
         Task ResetPasswordAsync(ResetPasswordRequest request);
+        Task<AuthResponse> RefreshTokenAsync(string refreshToken);
     }
 }

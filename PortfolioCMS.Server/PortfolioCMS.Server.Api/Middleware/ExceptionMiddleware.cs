@@ -1,5 +1,5 @@
 ﻿using PortfolioCMS.Server.Application.DTOs.Common;
-using PortfolioCMS.Server.Domain.Common.Exceptions;
+using PortfolioCMS.Server.Domain.Common;
 using System.Net;
 using System.Text.Json;
 

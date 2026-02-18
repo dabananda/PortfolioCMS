@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PortfolioCMS.Server.Application.DTOs.Auth;
 using PortfolioCMS.Server.Application.Interfaces;
 using PortfolioCMS.Server.Domain.Common;
-using PortfolioCMS.Server.Domain.Common.Exceptions;
 using PortfolioCMS.Server.Domain.Entities;
+using PortfolioCMS.Server.Infrastructure.Data;
 using System.Text;
 
 namespace PortfolioCMS.Server.Infrastructure.Services
@@ -14,57 +15,56 @@ namespace PortfolioCMS.Server.Infrastructure.Services
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly TokenService _tokenService;
+        private readonly ITokenService _tokenService;
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly ApplicationDbContext _context;
+        private readonly JwtSettings _jwtSettings;
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            TokenService tokenService,
+            ITokenService tokenService,
             IEmailService emailService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ApplicationDbContext context,
+            JwtSettings jwtSettings)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _tokenService = tokenService;
             _emailService = emailService;
             _configuration = configuration;
+            _context = context;
+            _jwtSettings = jwtSettings;
         }
 
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email)
-                ?? throw new UnauthorizedException("Invalid email or password.");
+                ?? throw new AppUnauthorizedException("Invalid email or password.");
 
             if (!await _userManager.IsEmailConfirmedAsync(user))
-                throw new UnauthorizedException("Email is not confirmed. Please check your inbox.");
+                throw new AppUnauthorizedException("Please confirm your email before logging in.");
 
-            var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
+            var result = await _signInManager.CheckPasswordSignInAsync(
+                user, request.Password, lockoutOnFailure: true);
 
             if (result.IsLockedOut)
-                throw new UnauthorizedException("Account is temporarily locked due to too many failed attempts. Please try again later.");
+                throw new AppUnauthorizedException(
+                    "Account is temporarily locked due to too many failed attempts. Try again later.");
 
             if (!result.Succeeded)
-                throw new UnauthorizedException("Invalid email or password.");
+                throw new AppUnauthorizedException("Invalid email or password.");
 
-            var roles = await _userManager.GetRolesAsync(user);
-            var token = _tokenService.CreateToken(user, roles);
-
-            return new AuthResponse
-            {
-                Id = user.Id.ToString(),
-                Email = user.Email!,
-                Token = token,
-                Roles = roles
-            };
+            return await IssueAuthResponseAsync(user);
         }
 
         public async Task<string> RegisterAsync(RegisterRequest request)
         {
             var userExists = await _userManager.FindByEmailAsync(request.Email);
             if (userExists != null)
-                throw new ConflictException("An account with this email already exists.");
+                throw new AppConflictException("An account with this email already exists.");
 
             var user = new ApplicationUser
             {
@@ -78,21 +78,11 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new ValidationException($"Registration failed: {errors}");
+                throw new AppValidationException($"Registration failed: {errors}");
             }
 
             await _userManager.AddToRoleAsync(user, Role.User);
-
-            var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(emailToken));
-            var frontend = _configuration["FrontendBaseUrl"]
-                ?? throw new InvalidOperationException("FrontendBaseUrl is not configured.");
-            var confirmationLink = $"{frontend}/confirm-email?userid={user.Id}&token={encodedToken}";
-
-            await _emailService.SendEmailAsync(
-                user.Email!,
-                "Confirm your email",
-                $"Please confirm your email by clicking <a href='{confirmationLink}' target='_blank'>here</a>.");
+            await SendEmailConfirmationAsync(user);
 
             return "Registration successful! Please check your email to confirm your account.";
         }
@@ -100,7 +90,7 @@ namespace PortfolioCMS.Server.Infrastructure.Services
         public async Task ConfirmEmailAsync(string userId, string token)
         {
             var user = await _userManager.FindByIdAsync(userId)
-                ?? throw new NotFoundException("User not found.");
+                ?? throw new AppNotFoundException("User not found.");
 
             var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
             var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
@@ -108,22 +98,19 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new ValidationException($"Email confirmation failed: {errors}");
+                throw new AppValidationException($"Email confirmation failed: {errors}");
             }
         }
 
         public async Task ForgotPasswordAsync(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
-
-            // Silently return if user not found or email not confirmed — prevents user enumeration
             if (user == null || !await _userManager.IsEmailConfirmedAsync(user))
                 return;
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-            var frontend = _configuration["FrontendBaseUrl"]
-                ?? throw new InvalidOperationException("FrontendBaseUrl is not configured.");
+            var frontend = GetFrontendBaseUrl();
             var resetLink = $"{frontend}/reset-password?email={email}&token={encodedToken}";
 
             await _emailService.SendEmailAsync(
@@ -135,7 +122,7 @@ namespace PortfolioCMS.Server.Infrastructure.Services
         public async Task ResetPasswordAsync(ResetPasswordRequest request)
         {
             var user = await _userManager.FindByEmailAsync(request.Email)
-                ?? throw new NotFoundException("User not found.");
+                ?? throw new AppNotFoundException("User not found.");
 
             var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Token));
             var result = await _userManager.ResetPasswordAsync(user, decodedToken, request.NewPassword);
@@ -143,8 +130,87 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new ValidationException($"Password reset failed: {errors}");
+                throw new AppValidationException($"Password reset failed: {errors}");
             }
         }
+
+        public async Task<AuthResponse> RefreshTokenAsync(string refreshToken)
+        {
+            var storedToken = await _context.RefreshTokens
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t => t.Token == refreshToken)
+                ?? throw new AppUnauthorizedException("Invalid refresh token.");
+
+            if (!storedToken.IsActive)
+                throw new AppUnauthorizedException("Refresh token has expired or been revoked.");
+
+            storedToken.RevokedAt = DateTime.UtcNow;
+            var newRawToken = _tokenService.GenerateRefreshToken();
+            storedToken.ReplacedByToken = newRawToken;
+
+            _context.RefreshTokens.Add(new RefreshToken
+            {
+                Token = newRawToken,
+                UserId = storedToken.UserId,
+                ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays),
+                CreatedAt = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+
+            return await IssueAuthResponseAsync(storedToken.User!);
+        }
+
+        // Private helpers
+
+        private async Task<AuthResponse> IssueAuthResponseAsync(ApplicationUser user)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+            var accessToken = _tokenService.CreateAccessToken(user, roles);
+            var rawRefresh = _tokenService.GenerateRefreshToken();
+
+            // Revoke any existing active tokens for this user
+            var activeTokens = await _context.RefreshTokens
+                .Where(t => t.UserId == user.Id && t.RevokedAt == null && t.ExpiresAt > DateTime.UtcNow)
+                .ToListAsync();
+            foreach (var t in activeTokens)
+                t.RevokedAt = DateTime.UtcNow;
+
+            _context.RefreshTokens.Add(new RefreshToken
+            {
+                Token = rawRefresh,
+                UserId = user.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays),
+                CreatedAt = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+
+            return new AuthResponse
+            {
+                Id = user.Id.ToString(),
+                Email = user.Email!,
+                AccessToken = accessToken,
+                RefreshToken = rawRefresh,
+                Roles = roles
+            };
+        }
+
+        private async Task SendEmailConfirmationAsync(ApplicationUser user)
+        {
+            var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(emailToken));
+            var frontend = GetFrontendBaseUrl();
+            var confirmLink = $"{frontend}/confirm-email?userid={user.Id}&token={encodedToken}";
+
+            await _emailService.SendEmailAsync(
+                user.Email!,
+                "Confirm your email",
+                $"Please confirm your email by clicking <a href='{confirmLink}' target='_blank'>here</a>.");
+        }
+
+        private string GetFrontendBaseUrl() =>
+            _configuration["FrontendBaseUrl"]
+                ?? throw new InvalidOperationException("FrontendBaseUrl is not configured.");
     }
 }

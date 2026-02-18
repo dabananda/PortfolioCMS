@@ -2,7 +2,7 @@
 
 namespace PortfolioCMS.Server.Domain.Entities
 {
-    public class CorsSetting : BaseEntity
+    public class CorsSetting : ConfigEntity
     {
         public string AllowedOrigins { get; set; } = string.Empty;
     }

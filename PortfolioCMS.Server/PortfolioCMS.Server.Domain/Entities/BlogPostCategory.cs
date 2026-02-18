@@ -8,5 +8,6 @@ namespace PortfolioCMS.Server.Domain.Entities
         public string? Description { get; set; }
         public Guid UserId { get; set; }
         public ApplicationUser? User { get; set; }
+        public ICollection<BlogPost> BlogPosts { get; set; } = [];
     }
 }

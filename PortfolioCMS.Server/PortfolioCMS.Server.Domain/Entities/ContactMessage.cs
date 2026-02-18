@@ -8,6 +8,8 @@ namespace PortfolioCMS.Server.Domain.Entities
         public string Email { get; set; } = string.Empty;
         public string Subject { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public bool IsRead { get; set; } = false;
+        public DateTime? ReadAt { get; set; }
         public Guid UserId { get; set; }
         public ApplicationUser? User { get; set; }
     }

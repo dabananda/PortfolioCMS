@@ -28,28 +28,36 @@ namespace PortfolioCMS.Server.Api.Controllers
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             var message = await _authService.RegisterAsync(request);
-            return ApiNoContent(message);
+            return ApiOkMessage(message);
         }
 
-        [HttpPost("confirm-email")]
-        public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token)
+        [HttpGet("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail(
+            [FromQuery] string userId, [FromQuery] string token)
         {
             await _authService.ConfirmEmailAsync(userId, token);
-            return ApiNoContent("Email confirmed successfully.");
+            return ApiOkMessage("Email confirmed successfully.");
         }
 
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
             await _authService.ForgotPasswordAsync(request.Email);
-            return ApiNoContent("If the email exists, a reset link has been sent.");
+            return ApiOkMessage("If the email exists, a reset link has been sent.");
         }
 
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
             await _authService.ResetPasswordAsync(request);
-            return ApiNoContent("Password has been reset successfully.");
+            return ApiOkMessage("Password has been reset successfully.");
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
+        {
+            var response = await _authService.RefreshTokenAsync(request.RefreshToken);
+            return ApiOk(response, "Token refreshed successfully.");
         }
     }
 }
