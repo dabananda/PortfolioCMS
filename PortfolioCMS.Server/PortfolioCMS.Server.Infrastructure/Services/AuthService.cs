@@ -64,7 +64,7 @@ namespace PortfolioCMS.Server.Infrastructure.Services
         {
             var userExists = await _userManager.FindByEmailAsync(request.Email);
             if (userExists != null)
-                throw new Domain.Common.Exceptions.ConflictException("An account with this email already exists.");
+                throw new ConflictException("An account with this email already exists.");
 
             var user = new ApplicationUser
             {
@@ -108,7 +108,7 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new Domain.Common.Exceptions.ValidationException($"Email confirmation failed: {errors}");
+                throw new ValidationException($"Email confirmation failed: {errors}");
             }
         }
 
@@ -143,7 +143,7 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                throw new Domain.Common.Exceptions.ValidationException($"Password reset failed: {errors}");
+                throw new ValidationException($"Password reset failed: {errors}");
             }
         }
     }
