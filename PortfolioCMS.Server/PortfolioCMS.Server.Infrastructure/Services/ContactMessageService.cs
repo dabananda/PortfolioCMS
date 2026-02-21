@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PortfolioCMS.Server.Application.DTOs.ContactMessage;
+using PortfolioCMS.Server.Application.Extensions;
 using PortfolioCMS.Server.Application.Interfaces;
 using PortfolioCMS.Server.Application.Mappings;
 using PortfolioCMS.Server.Domain.Common;
@@ -35,7 +36,7 @@ namespace PortfolioCMS.Server.Infrastructure.Services
 
         public async Task<ContactMessagePagedResponse> GetAllAsync(ContactMessageFilterRequest filter)
         {
-            var userId = GetAuthenticatedUserId();
+            var userId = _currentUserService.GetUserIdOrThrow();
 
             var page = Math.Max(1, filter.Page);
             var pageSize = Math.Clamp(filter.PageSize, 1, 100);
@@ -84,18 +85,10 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             await _context.SaveChangesAsync();
         }
 
-        // Helper methods
-        private Guid GetAuthenticatedUserId()
-        {
-            if (!_currentUserService.IsAuthenticated || _currentUserService.UserId is null)
-                throw new AppUnauthorizedException("User is not authenticated.");
-
-            return _currentUserService.UserId.Value;
-        }
-
+        // Helper method
         private async Task<ContactMessage> FindOwnedMessageAsync(Guid id)
         {
-            var userId = GetAuthenticatedUserId();
+            var userId = _currentUserService.GetUserIdOrThrow();
 
             return await _context.ContactMessages.FirstOrDefaultAsync(m => m.Id == id && m.UserId == userId) ?? throw new AppNotFoundException($"Contact message with ID '{id}' was not found.");
         }

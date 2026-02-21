@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PortfolioCMS.Server.Application.DTOs.Certification;
+using PortfolioCMS.Server.Application.Extensions;
 using PortfolioCMS.Server.Application.Interfaces;
 using PortfolioCMS.Server.Application.Mappings;
 using PortfolioCMS.Server.Domain.Common;
@@ -21,7 +22,7 @@ namespace PortfolioCMS.Server.Infrastructure.Services
 
         public async Task<CertificationResponse> CreateAsync(CreateCertificationRequest request)
         {
-            var userId = GetAuthenticatedUserId();
+            var userId = _currentUserService.GetUserIdOrThrow();
 
             var entity = CertificationMapper.ToEntity(request, userId);
 
@@ -41,7 +42,7 @@ namespace PortfolioCMS.Server.Infrastructure.Services
 
         public async Task<IReadOnlyList<CertificationResponse>> GetAllAsync()
         {
-            var userId = GetAuthenticatedUserId();
+            var userId = _currentUserService.GetUserIdOrThrow();
 
             var certifications = await _context.Certifications.AsNoTracking().Where(c => c.UserId == userId).OrderByDescending(c => c.DateObtained).ToListAsync();
             
@@ -65,18 +66,10 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             return CertificationMapper.ToResponse(entity);
         }
 
-        // Helper methods
-        private Guid GetAuthenticatedUserId()
-        {
-            if (!_currentUserService.IsAuthenticated || _currentUserService.UserId is null)
-                throw new AppUnauthorizedException("User is not authenticated.");
-
-            return _currentUserService.UserId.Value;
-        }
-
+        // Helper method
         private async Task<Certification> FindOwnedCertificationAsync(Guid id)
         {
-            var userId = GetAuthenticatedUserId();
+            var userId = _currentUserService.GetUserIdOrThrow();
 
             var entity = await _context.Certifications.FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId)
                 ?? throw new AppNotFoundException($"Certification with ID '{id}' was not found.");
