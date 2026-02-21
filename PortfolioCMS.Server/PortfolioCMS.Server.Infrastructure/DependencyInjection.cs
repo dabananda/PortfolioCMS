@@ -19,8 +19,7 @@ namespace PortfolioCMS.Server.Infrastructure
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddInfrastructure(
-            this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddMemoryCache();
             services.AddHttpContextAccessor();
@@ -38,7 +37,6 @@ namespace PortfolioCMS.Server.Infrastructure
         }
 
         // Identity
-
         private static void AddIdentity(IServiceCollection services, IConfiguration configuration)
         {
             var s = configuration.GetSection("IdentitySettings");
@@ -63,7 +61,6 @@ namespace PortfolioCMS.Server.Infrastructure
         }
 
         // JWT
-
         private static void AddJwt(IServiceCollection services, IConfiguration configuration)
         {
             var jwtSettings = new JwtSettings();
@@ -156,7 +153,6 @@ namespace PortfolioCMS.Server.Infrastructure
         }
 
         // Application Services
-
         private static void AddApplicationServices(IServiceCollection services)
         {
             services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -164,6 +160,7 @@ namespace PortfolioCMS.Server.Infrastructure
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IEncryptionService, EncryptionService>();
             services.AddSingleton<ITokenService, TokenService>();
+            services.AddScoped<ICertificationService, CertificationService>();
         }
     }
 }

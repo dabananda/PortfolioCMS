@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using PortfolioCMS.Server.Application.DTOs.Common;
 
 namespace PortfolioCMS.Server.Api.Controllers
@@ -7,6 +8,7 @@ namespace PortfolioCMS.Server.Api.Controllers
     [Route("api/v1/[controller]")]
     [ApiController]
     [Authorize]
+    [EnableRateLimiting("api")]
     public class BaseController : ControllerBase
     {
         protected IActionResult ApiOk<T>(T data, string message = "Request successful.")
