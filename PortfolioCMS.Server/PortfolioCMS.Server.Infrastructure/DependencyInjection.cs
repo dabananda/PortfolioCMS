@@ -161,6 +161,7 @@ namespace PortfolioCMS.Server.Infrastructure
             services.AddScoped<IEncryptionService, EncryptionService>();
             services.AddSingleton<ITokenService, TokenService>();
             services.AddScoped<ICertificationService, CertificationService>();
+            services.AddScoped<IContactMessageService, ContactMessageService>();
         }
     }
 }
