@@ -28,7 +28,7 @@ This project adheres to our [Code of Conduct](./CODE_OF_CONDUCT.md). By particip
 
 ## Getting Started
 
-PortfolioCMS is built on **ASP.NET Core 10.0** using a **Clean Architecture** pattern with **Entity Framework Core** and **SQL Server**. Before contributing, make sure you're familiar with the general structure of the codebase and the conventions used across layers.
+PortfolioCMS is built on **ASP.NET Core 10.0** using a **Clean Architecture** pattern with **Entity Framework Core**, **SQL Server**, and **Cloudinary** for file storage. Before contributing, make sure you're familiar with the general structure of the codebase and the conventions used across layers.
 
 If you're unsure where to start, look for issues labeled [`good first issue`](https://github.com/dabananda/portfoliocms/issues?q=label%3A%22good+first+issue%22) or [`help wanted`](https://github.com/dabananda/portfoliocms/issues?q=label%3A%22help+wanted%22).
 
@@ -38,7 +38,7 @@ If you're unsure where to start, look for issues labeled [`good first issue`](ht
 
 ### Prerequisites
 
-Make sure you have the following installed before proceeding:
+Make sure you have the following installed and configured before proceeding:
 
 | Tool | Version / Notes |
 |---|---|
@@ -46,6 +46,7 @@ Make sure you have the following installed before proceeding:
 | SQL Server | LocalDB or a Docker container |
 | IDE | Visual Studio 2022, VS Code, or JetBrains Rider |
 | EF Core CLI | `dotnet tool install --global dotnet-ef` |
+| [Cloudinary Account](https://cloudinary.com/users/register/free) | Free tier is sufficient for local development |
 
 ---
 
@@ -67,9 +68,17 @@ dotnet user-secrets set "JwtSettings:Secret" "YourSuperSecretKeyThatIsAtLeast32C
 dotnet user-secrets set "EncryptionSettings:Key" "12345678901234567890123456789012"
 dotnet user-secrets set "AdminUser:Email" "admin@example.com"
 dotnet user-secrets set "AdminUser:Password" "Admin@123!"
+
+# Cloudinary — required for POST /upload/image and POST /upload/resume
+dotnet user-secrets set "Cloudinary:CloudName" "your_cloud_name"
+dotnet user-secrets set "Cloudinary:ApiKey"    "your_api_key"
+dotnet user-secrets set "Cloudinary:ApiSecret" "your_api_secret"
 ```
 
-> ⚠️ **Important:** `EncryptionSettings:Key` must be **exactly 32 characters**. Never commit secrets to version control.
+> ⚠️ **Important:**
+> - `EncryptionSettings:Key` must be **exactly 32 characters**.
+> - Cloudinary credentials can be found in the [Cloudinary Console](https://console.cloudinary.com/) after signing up for a free account.
+> - Never commit secrets to version control.
 
 ---
 
@@ -103,7 +112,7 @@ PortfolioCMS/
 ├── PortfolioCMS.Server.Api/            # Controllers, Middleware, Program.cs, DI setup
 ├── PortfolioCMS.Server.Application/    # DTOs, Interfaces, Use Cases, Mappings
 ├── PortfolioCMS.Server.Domain/         # Entities, Domain Exceptions, Shared Models
-└── PortfolioCMS.Server.Infrastructure/ # DbContext, Migrations, Auth, Email, Token services
+└── PortfolioCMS.Server.Infrastructure/ # DbContext, Migrations, Auth, Email, Token, Cloudinary services
 ```
 
 **Key rules:**
@@ -111,6 +120,7 @@ PortfolioCMS/
 - The `Application` layer depends only on `Domain` — never on `Infrastructure`.
 - The `Api` layer orchestrates everything and is the only entry point for HTTP concerns.
 - Cross-cutting concerns (logging, exception handling) belong in `Api` middleware or `Infrastructure`.
+- New services (e.g., third-party integrations like Cloudinary) are implemented in `Infrastructure` behind an interface defined in `Application`.
 
 ---
 
@@ -157,10 +167,15 @@ We follow the [Conventional Commits](https://www.conventionalcommits.org/) speci
 ### Examples
 ```bash
 feat(auth): add refresh token rotation support
+feat(account): add change password and delete account endpoints
+feat(upload): integrate Cloudinary for image and resume uploads
+feat(profile): add IsPublic privacy toggle to user profile
+fix(contact): send email notification to owner on new message
 fix(projects): resolve null reference in project query handler
-docs(contributing): add database migration instructions
+docs(contributing): add Cloudinary setup instructions
 refactor(domain): extract base entity class to shared models
 test(auth): add unit tests for JWT token generation
+chore(deps): add CloudinaryDotNet package reference
 ```
 
 > Commit messages should be written in the **imperative mood** and kept under **72 characters** on the first line.
