@@ -23,6 +23,7 @@ namespace PortfolioCMS.Server.Application.Mappings
                 ImageUrl = entity.ImageUrl,
                 ResumeUrl = entity.ResumeUrl,
                 Location = entity.Location,
+                IsPublic = entity.IsPublic,
                 CreatedAt = entity.CreatedAt,
                 UpdatedAt = entity.UpdatedAt
             };
@@ -40,7 +41,8 @@ namespace PortfolioCMS.Server.Application.Mappings
                 HeadLine = request.HeadLine.Trim(),
                 ImageUrl = request.ImageUrl?.Trim(),
                 ResumeUrl = request.ResumeUrl?.Trim(),
-                Location = request.Location?.Trim()
+                Location = request.Location?.Trim(),
+                IsPublic = request.IsPublic
             };
         }
 
@@ -55,6 +57,7 @@ namespace PortfolioCMS.Server.Application.Mappings
             entity.ImageUrl = request.ImageUrl?.Trim();
             entity.ResumeUrl = request.ResumeUrl?.Trim();
             entity.Location = request.Location?.Trim();
+            entity.IsPublic = request.IsPublic;
         }
     }
 }

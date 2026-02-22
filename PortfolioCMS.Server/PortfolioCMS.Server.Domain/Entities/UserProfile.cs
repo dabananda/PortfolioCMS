@@ -11,7 +11,7 @@ namespace PortfolioCMS.Server.Domain.Entities
         public string HeadLine { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
         public string? ResumeUrl { get; set; }
-
         public string? Location { get; set; }
+        public bool IsPublic { get; set; } = false;
     }
 }

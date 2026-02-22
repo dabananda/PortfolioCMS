@@ -159,14 +159,20 @@ namespace PortfolioCMS.Server.Infrastructure
         // Application Services
         private static void AddApplicationServices(IServiceCollection services)
         {
-            // Infrastructure / cross-cutting
+            // Infrastructure
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<IEncryptionService, EncryptionService>();
             services.AddScoped<IEmailService, EmailService>();
             services.AddSingleton<ITokenService, TokenService>();
 
+            // File uploads (Cloudinary)
+            services.AddScoped<IFileUploadService, CloudinaryFileUploadService>();
+
             // Auth
             services.AddScoped<IAuthService, AuthService>();
+
+            // Account management
+            services.AddScoped<IAccountService, AccountService>();
 
             // Portfolio content (authenticated user managing their own data)
             services.AddScoped<IUserProfileService, UserProfileService>();

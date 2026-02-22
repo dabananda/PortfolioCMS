@@ -15,6 +15,7 @@ namespace PortfolioCMS.Server.Application.DTOs.UserProfile
         public string? ImageUrl { get; set; }
         public string? ResumeUrl { get; set; }
         public string? Location { get; set; }
+        public bool IsPublic { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }

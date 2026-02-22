@@ -25,6 +25,8 @@ namespace PortfolioCMS.Server.Application.DTOs.UserProfile
 
         [MaxLength(200, ErrorMessage = "Location cannot exceed 200 characters.")]
         public string? Location { get; set; }
+
+        public bool IsPublic { get; set; } = false;
     }
 
     public class UpdateUserProfileRequest : CreateUserProfileRequest { }

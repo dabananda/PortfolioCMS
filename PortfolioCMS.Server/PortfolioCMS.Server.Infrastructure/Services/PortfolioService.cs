@@ -95,6 +95,10 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             var profile = profileTask.Result
                 ?? throw new AppNotFoundException($"Portfolio for '{username}' is not set up yet.");
 
+            // Privacy gate
+            if (!profile.IsPublic)
+                throw new AppNotFoundException($"Portfolio for '{username}' was not found.");
+
             return new PublicPortfolioResponse
             {
                 Profile = new PublicProfileResponse
@@ -125,6 +129,14 @@ namespace PortfolioCMS.Server.Infrastructure.Services
         {
             var user = await _userManager.FindByNameAsync(username)
                 ?? throw new AppNotFoundException($"Portfolio for '{username}' was not found.");
+
+            // Enforce privacy — block blog access too if portfolio is private
+            var profile = await _context.UserProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.UserId == user.Id);
+
+            if (profile is null || !profile.IsPublic)
+                throw new AppNotFoundException($"Portfolio for '{username}' was not found.");
 
             var page = Math.Max(1, filter.Page);
             var pageSize = Math.Clamp(filter.PageSize, 1, 50);
@@ -160,6 +172,13 @@ namespace PortfolioCMS.Server.Infrastructure.Services
         {
             var user = await _userManager.FindByNameAsync(username)
                 ?? throw new AppNotFoundException($"Portfolio for '{username}' was not found.");
+
+            var profile = await _context.UserProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.UserId == user.Id);
+
+            if (profile is null || !profile.IsPublic)
+                throw new AppNotFoundException($"Portfolio for '{username}' was not found.");
 
             var post = await _context.BlogPosts
                 .AsNoTracking()
