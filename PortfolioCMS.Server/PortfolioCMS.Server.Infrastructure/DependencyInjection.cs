@@ -2,10 +2,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using PortfolioCMS.Server.Application.Interfaces;
 using PortfolioCMS.Server.Domain.Common;
@@ -31,6 +31,7 @@ namespace PortfolioCMS.Server.Infrastructure
             AddJwt(services, configuration);
             AddCors(services, configuration);
             AddRateLimiting(services);
+            AddHealthChecks(services);
             AddApplicationServices(services);
 
             return services;
@@ -136,25 +137,45 @@ namespace PortfolioCMS.Server.Infrastructure
             {
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-                // Auth endpoints: 5 requests per minute per IP
-                options.AddFixedWindowLimiter("auth", opt =>
-                {
-                    opt.PermitLimit = 5;
-                    opt.Window = TimeSpan.FromMinutes(1);
-                    opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    opt.QueueLimit = 0;
-                });
+                // Auth endpoints: 5 requests / minute per IP
+                options.AddPolicy("auth", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: GetClientIp(httpContext),
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 5,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0
+                        }));
 
-                // General API: 50 requests per minute per IP
-                options.AddFixedWindowLimiter("api", opt =>
-                {
-                    opt.PermitLimit = 50;
-                    opt.Window = TimeSpan.FromMinutes(1);
-                    opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                    opt.QueueLimit = 5;
-                });
+                // General API: 50 requests / minute per IP
+                options.AddPolicy("api", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: GetClientIp(httpContext),
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 50,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 5
+                        }));
             });
         }
+
+        // Health Checks — SQL Server connectivity via EF Core
+        private static void AddHealthChecks(IServiceCollection services)
+        {
+            services.AddHealthChecks()
+                .AddDbContextCheck<ApplicationDbContext>(
+                    name: "sql-server",
+                    failureStatus: HealthStatus.Unhealthy,
+                    tags: ["database", "ready"]);
+        }
+
+        // Helpers
+        private static string GetClientIp(HttpContext ctx)
+            => ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
         // Application Services
         private static void AddApplicationServices(IServiceCollection services)

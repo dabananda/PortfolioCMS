@@ -1,8 +1,11 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using PortfolioCMS.Server.Api.Middleware;
 using PortfolioCMS.Server.Infrastructure;
 using PortfolioCMS.Server.Infrastructure.Data;
 using Serilog;
 using Serilog.Events;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -71,6 +74,40 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Health check endpoint — anonymous, exempt from rate limiting, returns JSON
+// GET /health  ->  200 Healthy | 503 Unhealthy
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+
+        var result = new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description,
+                duration = e.Value.Duration.TotalMilliseconds.ToString("F2") + " ms",
+                tags = e.Value.Tags
+            }),
+            totalDuration = report.TotalDuration.TotalMilliseconds.ToString("F2") + " ms",
+            timestamp = DateTime.UtcNow
+        };
+
+        var json = JsonSerializer.Serialize(result, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true
+        });
+
+        context.Response.StatusCode = report.Status == HealthStatus.Healthy ? 200 : 503;
+        await context.Response.WriteAsync(json);
+    }
+}).AllowAnonymous();
 
 try
 {
