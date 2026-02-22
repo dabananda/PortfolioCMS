@@ -30,7 +30,7 @@ Use the subject line: `[SECURITY] Vulnerability Report — PortfolioCMS`
 To help us triage and resolve the issue as quickly as possible, please provide as much of the following as you can:
 
 - **Description** — A clear explanation of the vulnerability and its potential impact.
-- **Affected component** — Which layer or module is affected (e.g., `Infrastructure/Auth`, `Api/Middleware`, JWT handling, encryption, etc.).
+- **Affected component** — Which layer or module is affected (e.g., `Infrastructure/Auth`, `Api/Middleware`, JWT handling, encryption, file upload, account management, etc.).
 - **Steps to reproduce** — A minimal, reliable reproduction path. Include HTTP requests, payloads, or code snippets where applicable.
 - **Proof of concept** — If available, a PoC that demonstrates the vulnerability without causing harm.
 - **Suggested mitigation** — Any fixes or workarounds you have identified, if applicable.
@@ -72,15 +72,19 @@ We kindly ask that you give us a reasonable window to address the vulnerability 
 The following are considered **in scope** for security reports:
 
 - Authentication and authorization flaws (JWT, refresh tokens, role bypass)
+- Account management flaws (unauthorized password change, account takeover, improper account deletion)
 - Cryptographic weaknesses (AES encryption, key management)
 - Injection vulnerabilities (SQL injection, command injection)
 - Sensitive data exposure through API responses
 - Broken access control across portfolio or user resources
+- File upload vulnerabilities (malicious file bypass, path traversal via Cloudinary integration, missing size/type validation)
 - Security misconfigurations in middleware or DI setup
+- Portfolio privacy bypass — accessing a portfolio or its blog/contact endpoint when `IsPublic` is `false`
+- Email notification abuse — contact message endpoint misuse leading to spam or information disclosure
 
 The following are considered **out of scope**:
 
-- Vulnerabilities in third-party dependencies (report these to the respective maintainers)
+- Vulnerabilities in third-party dependencies (report these to the respective maintainers — e.g., Cloudinary SDK, MailKit)
 - Issues in unsupported versions (< v1.0)
 - Social engineering attacks
 - Denial of service (DoS) attacks without a clear code-level root cause
@@ -92,12 +96,14 @@ The following are considered **out of scope**:
 
 If you are running PortfolioCMS in your own environment, we recommend the following:
 
-- **Never commit secrets** to version control. Use environment variables or a secrets manager.
-- **Rotate your JWT secret and encryption key** regularly and store them securely.
+- **Never commit secrets** to version control. Use environment variables, `dotnet user-secrets`, or a secrets manager (e.g., Azure Key Vault, AWS Secrets Manager).
+- **Rotate your JWT secret, encryption key, and Cloudinary API secret** regularly and store them securely.
 - Keep your **.NET runtime and NuGet dependencies up to date** to patch known CVEs.
 - Run the application **behind a reverse proxy** (e.g., Nginx, Caddy) with HTTPS enforced.
 - **Restrict database access** to only the application service account with least-privilege permissions.
 - Enable **audit logging** via Serilog and monitor for unusual activity.
+- **Restrict Cloudinary upload presets** in your Cloudinary Console to the folders and resource types used by PortfolioCMS (`portfolio-cms/images`, `portfolio-cms/resumes`).
+- Configure **SMTP credentials** with an app-specific password rather than your primary account password, and rotate them periodically.
 
 ---
 
