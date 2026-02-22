@@ -29,7 +29,11 @@ Built on **ASP.NET Core 10** with a strict **Clean Architecture** separation of 
 - 🔐 **JWT Authentication** with secure refresh token rotation
 - 🔒 **AES Encryption** for sensitive data fields
 - 👤 **Role-based authorization** with a seeded admin user
+- 🔑 **Account Management** — change password, update name, and delete account
 - 📁 **Portfolio & Project management** via a structured REST API
+- 🖼️ **Cloud file uploads** — profile images and resumes uploaded directly to **Cloudinary CDN**
+- 🔏 **Portfolio privacy toggle** — portfolios are private by default; owners explicitly publish when ready
+- 📨 **Contact message email notifications** — portfolio owners are notified by email when someone submits a contact form
 - 🧱 **Clean Architecture** — Domain, Application, Infrastructure, and API layers strictly separated
 - 🗃️ **Entity Framework Core** with SQL Server and full migration support
 - 📋 **Structured logging** via Serilog
@@ -45,7 +49,7 @@ PortfolioCMS/
 ├── PortfolioCMS.Server.Api/            # HTTP layer: Controllers, Middleware, DI setup
 ├── PortfolioCMS.Server.Application/    # Use cases: DTOs, Interfaces, Mappings
 ├── PortfolioCMS.Server.Domain/         # Core: Entities, Domain Exceptions, Shared Models
-└── PortfolioCMS.Server.Infrastructure/ # External: DbContext, Migrations, Auth, Email, Token
+└── PortfolioCMS.Server.Infrastructure/ # External: DbContext, Migrations, Auth, Email, Token, Cloudinary
 ```
 ```
 [ Api ] → [ Application ] → [ Domain ]
@@ -66,6 +70,7 @@ PortfolioCMS/
 | [.NET SDK](https://dotnet.microsoft.com/download/dotnet/10.0) | 10.0 or later |
 | SQL Server | LocalDB or Docker |
 | EF Core CLI | `dotnet tool install --global dotnet-ef` |
+| [Cloudinary Account](https://cloudinary.com/users/register/free) | Free tier is sufficient |
 
 ---
 
@@ -85,9 +90,14 @@ dotnet user-secrets set "JwtSettings:Secret" "YourSuperSecretKeyThatIsAtLeast32C
 dotnet user-secrets set "EncryptionSettings:Key" "12345678901234567890123456789012"
 dotnet user-secrets set "AdminUser:Email" "admin@example.com"
 dotnet user-secrets set "AdminUser:Password" "Admin@123!"
+
+# Cloudinary (required for image and resume uploads)
+dotnet user-secrets set "Cloudinary:CloudName" "your_cloud_name"
+dotnet user-secrets set "Cloudinary:ApiKey"    "your_api_key"
+dotnet user-secrets set "Cloudinary:ApiSecret" "your_api_secret"
 ```
 
-> ⚠️ `EncryptionSettings:Key` must be **exactly 32 characters**. Never commit secrets to source control.
+> ⚠️ `EncryptionSettings:Key` must be **exactly 32 characters**. Your Cloudinary credentials can be found in the [Cloudinary Console](https://console.cloudinary.com/). Never commit secrets to source control.
 
 ### 3. Apply Database Migrations
 ```bash
@@ -101,6 +111,55 @@ dotnet run --project PortfolioCMS.Server.Api
 
 The API will be available at `https://localhost:{port}`.
 Swagger UI is accessible at `https://localhost:{port}/swagger` in development mode.
+
+---
+
+## API Overview
+
+### Authentication & Account
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/v1/auth/register` | ❌ | Register a new user |
+| `POST` | `/api/v1/auth/login` | ❌ | Login and receive tokens |
+| `POST` | `/api/v1/auth/refresh` | ❌ | Refresh access token |
+| `POST` | `/api/v1/auth/forgot-password` | ❌ | Request password reset email |
+| `POST` | `/api/v1/auth/reset-password` | ❌ | Reset password using email token |
+| `GET`  | `/api/v1/auth/confirm-email` | ❌ | Confirm email address |
+| `GET`  | `/api/v1/auth/check-username` | ❌ | Check username availability |
+| `POST` | `/api/v1/account/change-password` | ✅ | Change authenticated user's password |
+| `PUT`  | `/api/v1/account/update-name` | ✅ | Update first and last name |
+| `DELETE` | `/api/v1/account` | ✅ | Permanently delete account and all data |
+
+### File Uploads
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/v1/upload/image` | ✅ | Upload profile image to Cloudinary (max 5 MB) |
+| `POST` | `/api/v1/upload/resume` | ✅ | Upload resume to Cloudinary (max 10 MB) |
+
+### Portfolio Content (all require auth)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET/POST/PUT` | `/api/v1/userprofile` | Manage your profile — includes `isPublic` privacy toggle |
+| `GET/POST/PUT/DELETE` | `/api/v1/skill` | Skills |
+| `GET/POST/PUT/DELETE` | `/api/v1/education` | Education history |
+| `GET/POST/PUT/DELETE` | `/api/v1/workexperience` | Work experience |
+| `GET/POST/PUT/DELETE` | `/api/v1/project` | Projects |
+| `GET/POST/PUT/DELETE` | `/api/v1/certification` | Certifications |
+| `GET/POST/PUT/DELETE` | `/api/v1/sociallink` | Social links |
+| `GET/POST/PUT/DELETE` | `/api/v1/review` | Reviews / testimonials |
+| `GET/POST/PUT/DELETE` | `/api/v1/extracurricularactivity` | Extra-curricular activities |
+| `GET/POST/PUT/DELETE` | `/api/v1/problemsolving` | Competitive programming stats |
+| `GET/POST/PUT/DELETE` | `/api/v1/blogpostcategory` | Blog categories |
+| `GET/POST/PUT/DELETE/PATCH` | `/api/v1/blogpost` | Blog posts (with publish/unpublish) |
+| `GET/PATCH/DELETE` | `/api/v1/contactmessage` | Inbox — messages sent by visitors |
+
+### Public Portfolio (anonymous, no auth)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/portfolio/{username}` | Full public portfolio (only if `isPublic = true`) |
+| `GET` | `/api/v1/portfolio/{username}/blog` | Published blog posts |
+| `GET` | `/api/v1/portfolio/{username}/blog/{slug}` | Single published blog post |
+| `POST` | `/api/v1/portfolio/{username}/contact-message` | Send a contact message (triggers owner email) |
 
 ---
 
