@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -48,6 +48,10 @@ namespace PortfolioCMS.Server.Infrastructure
                 options.Password.RequireUppercase = s.GetValue<bool>("PasswordRequireUppercase");
                 options.Password.RequireNonAlphanumeric = s.GetValue<bool>("PasswordRequireNonAlphanumeric");
                 options.Password.RequiredLength = s.GetValue<int>("PasswordRequiredLength");
+
+                // Only allow characters that match our username rules (letters, digits, - and _).
+                // This is a server-side safety net on top of the DTO [RegularExpression] attribute.
+                options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyz0123456789-_";
                 options.User.RequireUniqueEmail = true;
 
                 options.SignIn.RequireConfirmedEmail = s.GetValue<bool>("RequireConfirmedEmail");
@@ -155,14 +159,37 @@ namespace PortfolioCMS.Server.Infrastructure
         // Application Services
         private static void AddApplicationServices(IServiceCollection services)
         {
+            // Infrastructure / cross-cutting
             services.AddScoped<ICurrentUserService, CurrentUserService>();
-            services.AddScoped<IAuthService, AuthService>();
-            services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IEncryptionService, EncryptionService>();
+            services.AddScoped<IEmailService, EmailService>();
             services.AddSingleton<ITokenService, TokenService>();
+
+            // Auth
+            services.AddScoped<IAuthService, AuthService>();
+
+            // Portfolio content (authenticated user managing their own data)
+            services.AddScoped<IUserProfileService, UserProfileService>();
+            services.AddScoped<ISkillService, SkillService>();
+            services.AddScoped<IEducationService, EducationService>();
+            services.AddScoped<IWorkExperienceService, WorkExperienceService>();
+            services.AddScoped<IExtraCurricularActivityService, ExtraCurricularActivityService>();
+            services.AddScoped<IProblemSolvingService, ProblemSolvingService>();
+            services.AddScoped<IReviewService, ReviewService>();
+            services.AddScoped<ISocialLinkService, SocialLinkService>();
             services.AddScoped<ICertificationService, CertificationService>();
-            services.AddScoped<IContactMessageService, ContactMessageService>();
             services.AddScoped<IProjectService, ProjectService>();
+            services.AddScoped<IContactMessageService, ContactMessageService>();
+
+            // Blog
+            services.AddScoped<IBlogPostCategoryService, BlogPostCategoryService>();
+            services.AddScoped<IBlogPostService, BlogPostService>();
+
+            // Admin
+            services.AddScoped<IAdminSettingsService, AdminSettingsService>();
+
+            // Public portfolio (read-only, anonymous)
+            services.AddScoped<IPortfolioService, PortfolioService>();
         }
     }
 }

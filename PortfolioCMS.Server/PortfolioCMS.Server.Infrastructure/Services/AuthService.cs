@@ -62,16 +62,23 @@ namespace PortfolioCMS.Server.Infrastructure.Services
 
         public async Task<string> RegisterAsync(RegisterRequest request)
         {
-            var userExists = await _userManager.FindByEmailAsync(request.Email);
-            if (userExists != null)
+            // Normalize username to lowercase for case-insensitive uniqueness
+            var normalizedUsername = request.Username.ToLowerInvariant();
+
+            // Check email uniqueness
+            if (await _userManager.FindByEmailAsync(request.Email) is not null)
                 throw new AppConflictException("An account with this email already exists.");
+
+            // Check username uniqueness
+            if (await _userManager.FindByNameAsync(normalizedUsername) is not null)
+                throw new AppConflictException($"The username '{normalizedUsername}' is already taken.");
 
             var user = new ApplicationUser
             {
+                UserName = normalizedUsername,   // public handle — portfolio URL key
                 Email = request.Email,
-                UserName = request.Email,
-                FirstName = request.FirstName,
-                LastName = request.LastName
+                FirstName = request.FirstName.Trim(),
+                LastName = request.LastName.Trim()
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
@@ -106,7 +113,7 @@ namespace PortfolioCMS.Server.Infrastructure.Services
         {
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null || !await _userManager.IsEmailConfirmedAsync(user))
-                return;
+                return;  // Silent — never reveal whether an email exists
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
@@ -161,15 +168,20 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             return await IssueAuthResponseAsync(storedToken.User!);
         }
 
-        // Private helpers
+        public async Task<bool> IsUsernameAvailableAsync(string username)
+        {
+            var normalized = username.ToLowerInvariant();
+            return await _userManager.FindByNameAsync(normalized) is null;
+        }
 
+        // Helpers
         private async Task<AuthResponse> IssueAuthResponseAsync(ApplicationUser user)
         {
             var roles = await _userManager.GetRolesAsync(user);
             var accessToken = _tokenService.CreateAccessToken(user, roles);
             var rawRefresh = _tokenService.GenerateRefreshToken();
 
-            // Revoke any existing active tokens for this user
+            // Revoke all currently active refresh tokens for this user (single-session policy)
             var activeTokens = await _context.RefreshTokens
                 .Where(t => t.UserId == user.Id && t.RevokedAt == null && t.ExpiresAt > DateTime.UtcNow)
                 .ToListAsync();
@@ -189,6 +201,7 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             return new AuthResponse
             {
                 Id = user.Id.ToString(),
+                Username = user.UserName!,
                 Email = user.Email!,
                 AccessToken = accessToken,
                 RefreshToken = rawRefresh,

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using PortfolioCMS.Server.Application.DTOs.Auth;
 using PortfolioCMS.Server.Application.Interfaces;
 
@@ -16,6 +17,7 @@ namespace PortfolioCMS.Server.Api.Controllers
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var response = await _authService.LoginAsync(request);
@@ -23,6 +25,7 @@ namespace PortfolioCMS.Server.Api.Controllers
         }
 
         [HttpPost("register")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             var message = await _authService.RegisterAsync(request);
@@ -38,6 +41,7 @@ namespace PortfolioCMS.Server.Api.Controllers
         }
 
         [HttpPost("forgot-password")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
             await _authService.ForgotPasswordAsync(request.Email);
@@ -45,6 +49,7 @@ namespace PortfolioCMS.Server.Api.Controllers
         }
 
         [HttpPost("reset-password")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
             await _authService.ResetPasswordAsync(request);
@@ -56,6 +61,16 @@ namespace PortfolioCMS.Server.Api.Controllers
         {
             var response = await _authService.RefreshTokenAsync(request.RefreshToken);
             return ApiOk(response, "Token refreshed successfully.");
+        }
+
+        [HttpGet("check-username")]
+        public async Task<IActionResult> CheckUsername([FromQuery] string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                return ApiOk(new { available = false });
+
+            var available = await _authService.IsUsernameAvailableAsync(username);
+            return ApiOk(new { available });
         }
     }
 }
