@@ -1,38 +1,104 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
+name: Bug Report
+about: Report a reproducible bug to help us improve PortfolioCMS
+title: "[BUG] "
+labels: bug
+assignees: ""
+---
+
+## Bug Description
+
+<!-- A clear and concise description of what the bug is. What went wrong? -->
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+## Steps to Reproduce
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+Please provide a reliable sequence of steps to reproduce the behavior:
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+1. 
+2. 
+3. 
+4. 
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+---
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+## Expected Behavior
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+<!-- What did you expect to happen? -->
 
-**Additional context**
-Add any other context about the problem here.
+---
+
+## Actual Behavior
+
+<!-- What actually happened? Include any error messages, status codes, or unexpected output. -->
+
+---
+
+## Logs & Error Output
+
+<!-- Paste any relevant logs below. Serilog output or ExceptionMiddleware responses are especially helpful. -->
+
+<details>
+<summary>Click to expand logs</summary>
+```
+Paste logs here
+```
+
+</details>
+
+---
+
+## API Request / Response (if applicable)
+
+<!-- If the bug involves an API endpoint, include the request and response details. -->
+
+**Endpoint:**
+```
+METHOD /api/endpoint
+```
+
+**Request Body:**
+```json
+```
+
+**Response:**
+```json
+```
+
+---
+
+## Environment Details
+
+| Field | Value |
+|---|---|
+| OS | e.g. Windows 11, Ubuntu 22.04 |
+| IDE | e.g. Visual Studio 2022, VS Code, Rider |
+| .NET Version | e.g. .NET 10.0 |
+| Database | e.g. SQL Server 2022, LocalDB |
+| PortfolioCMS Version | e.g. v1.0.0 |
+| Deployment | e.g. Local, Docker, Self-hosted |
+
+---
+
+## Affected Layer / Component
+
+<!-- Check all that apply -->
+
+- [ ] `Api` — Controllers, Middleware, Program.cs
+- [ ] `Application` — DTOs, Interfaces, Use Cases, Mappings
+- [ ] `Domain` — Entities, Domain Exceptions, Shared Models
+- [ ] `Infrastructure` — DbContext, Migrations, Auth, Email, Token services
+- [ ] Other — please describe below
+
+---
+
+## Additional Context
+
+<!-- Any other context, screenshots, related issues, or notes that might help us investigate. -->
+
+---
+
+## Possible Fix
+
+<!-- Optional: If you have a hunch about what's causing the issue or a potential fix, describe it here. -->
