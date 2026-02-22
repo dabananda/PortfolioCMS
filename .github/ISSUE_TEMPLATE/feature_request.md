@@ -27,7 +27,7 @@ assignees: ""
 - [ ] `Api` — New endpoints, middleware, or controller changes
 - [ ] `Application` — New use cases, DTOs, interfaces, or mappings
 - [ ] `Domain` — New entities, value objects, or domain rules
-- [ ] `Infrastructure` — New services (e.g., storage, email, token), DB changes, or migrations
+- [ ] `Infrastructure` — New services (e.g., storage, email, token, Cloudinary), DB changes, or migrations
 - [ ] Cross-cutting — Logging, error handling, configuration, or security
 
 ---
