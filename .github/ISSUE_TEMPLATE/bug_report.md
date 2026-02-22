@@ -41,6 +41,7 @@ Please provide a reliable sequence of steps to reproduce the behavior:
 
 <details>
 <summary>Click to expand logs</summary>
+
 ```
 Paste logs here
 ```
@@ -89,6 +90,10 @@ METHOD /api/endpoint
 - [ ] `Application` — DTOs, Interfaces, Use Cases, Mappings
 - [ ] `Domain` — Entities, Domain Exceptions, Shared Models
 - [ ] `Infrastructure` — DbContext, Migrations, Auth, Email, Token services
+- [ ] `Account Management` — Change password, update name, delete account (`/api/v1/account`)
+- [ ] `File Upload` — Image or resume upload via Cloudinary (`/api/v1/upload`)
+- [ ] `Portfolio Privacy` — `IsPublic` toggle or public portfolio visibility
+- [ ] `Contact Notifications` — Email notification sent to portfolio owner on new message
 - [ ] Other — please describe below
 
 ---
