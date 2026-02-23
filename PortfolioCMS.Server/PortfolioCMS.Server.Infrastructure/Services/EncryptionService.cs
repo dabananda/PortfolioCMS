@@ -43,10 +43,22 @@ namespace PortfolioCMS.Server.Infrastructure.Services
 
         public string Decrypt(string ciphertextBase64)
         {
+            if (string.IsNullOrEmpty(ciphertextBase64))
+                throw new InvalidOperationException(
+                    "Cannot decrypt an empty value. " +
+                    "SMTP password may not have been saved — check EmailSettings in secrets.json.");
+
             var combined = Convert.FromBase64String(ciphertextBase64);
 
             var nonceSize = AesGcm.NonceByteSizes.MaxSize;
             var tagSize = AesGcm.TagByteSizes.MaxSize;
+
+            var minLength = nonceSize + tagSize;
+            if (combined.Length < minLength)
+                throw new InvalidOperationException(
+                    $"Encrypted value is too short ({combined.Length} bytes; expected at least {minLength}). " +
+                    "The stored SMTP password appears to be corrupt or was encrypted with a different key. " +
+                    "Clear the SystemSettings row in the database and restart the application to re-seed from secrets.json.");
             var nonce = combined[..nonceSize];
             var tag = combined[nonceSize..(nonceSize + tagSize)];
             var ciphertext = combined[(nonceSize + tagSize)..];

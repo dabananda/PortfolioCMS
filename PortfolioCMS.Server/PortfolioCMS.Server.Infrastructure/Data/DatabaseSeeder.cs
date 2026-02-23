@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using PortfolioCMS.Server.Application.Interfaces;
 using PortfolioCMS.Server.Domain.Common;
 using PortfolioCMS.Server.Domain.Entities;
-using PortfolioCMS.Server.Infrastructure.Data;
 using Serilog;
 
 namespace PortfolioCMS.Server.Infrastructure.Data
@@ -93,23 +92,39 @@ namespace PortfolioCMS.Server.Infrastructure.Data
                 var config = services.GetRequiredService<IConfiguration>();
                 var encryption = services.GetRequiredService<IEncryptionService>();
 
-                if (!await db.SystemSettings.AnyAsync())
-                {
-                    var emailSection = config.GetSection("EmailSettings");
-                    var rawPassword = emailSection["SmtpPassword"] ?? string.Empty;
+                var emailSection = config.GetSection("EmailSettings");
+                var rawPassword = emailSection["SmtpPassword"] ?? string.Empty;
 
+                var existingSettings = await db.SystemSettings.FirstOrDefaultAsync();
+
+                if (existingSettings is null)
+                {
                     db.SystemSettings.Add(new SystemSetting
                     {
                         SmtpHost = emailSection["SmtpServer"] ?? "smtp.gmail.com",
                         SmtpPort = emailSection.GetValue<int>("SmtpPort", 587),
                         SmtpUser = emailSection["SmtpUsername"] ?? string.Empty,
-                        SmtpPassEncrypted = encryption.Encrypt(rawPassword),
+                        SmtpPassEncrypted = string.IsNullOrEmpty(rawPassword)
+                            ? string.Empty
+                            : encryption.Encrypt(rawPassword),
                         SenderName = emailSection["FromName"] ?? "PortfolioCMS",
                         SenderEmail = emailSection["FromEmail"] ?? string.Empty,
                         EnableSsl = emailSection.GetValue<bool>("EnableSsl", true),
                     });
 
                     Log.Information("SystemSettings seeded from configuration.");
+                }
+                else if (string.IsNullOrEmpty(existingSettings.SmtpPassEncrypted) && !string.IsNullOrEmpty(rawPassword))
+                {
+                    existingSettings.SmtpHost = emailSection["SmtpServer"] ?? existingSettings.SmtpHost;
+                    existingSettings.SmtpPort = emailSection.GetValue<int>("SmtpPort", existingSettings.SmtpPort);
+                    existingSettings.SmtpUser = emailSection["SmtpUsername"] ?? existingSettings.SmtpUser;
+                    existingSettings.SmtpPassEncrypted = encryption.Encrypt(rawPassword);
+                    existingSettings.SenderName = emailSection["FromName"] ?? existingSettings.SenderName;
+                    existingSettings.SenderEmail = emailSection["FromEmail"] ?? existingSettings.SenderEmail;
+                    existingSettings.EnableSsl = emailSection.GetValue<bool>("EnableSsl", existingSettings.EnableSsl);
+
+                    Log.Information("SystemSettings updated with email credentials from configuration.");
                 }
 
                 if (!await db.CorsSettings.AnyAsync())
