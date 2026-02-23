@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside
         className={`bg-slate-900 text-white transition-all duration-300 ${isOpen ? 'w-64' : 'w-16'} flex flex-col`}
       >
-        <div className='p-4 font-bold text-xl border-b border-slate-700 flex justify-between items-center'>
+        <div className='h-16 px-6 font-bold text-xl border-b border-slate-700 flex justify-between items-center'>
           {isOpen ? <span>CMS Admin</span> : <span>CMS</span>}
         </div>
 
@@ -46,7 +46,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content Area */}
       <main className='flex-1 flex flex-col overflow-hidden'>
         {/* Top Header */}
-        <header className='bg-white shadow-sm p-3 flex items-center'>
+        <header className='bg-white shadow-sm px-6 h-16 flex items-center'>
           <button
             onClick={toggleSidebar}
             className='p-2 bg-slate-200 rounded-md hover:bg-slate-300 text-slate-700 font-bold'
