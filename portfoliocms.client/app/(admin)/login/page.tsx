@@ -45,7 +45,8 @@ export default function LoginPage() {
       const responseData = await res.json();
       const token = responseData.data?.token || responseData.token;
 
-      document.cookie = `accessToken=${token}; path=/; max-age=86400; secure; samesite=strict`;
+      const isProduction = process.env.NODE_ENV === 'production';
+      document.cookie = `accessToken=${token}; path=/; max-age=86400; ${isProduction ? 'secure; ' : ''}samesite=strict`;
 
       router.push('/dashboard');
     } catch (err: any) {
