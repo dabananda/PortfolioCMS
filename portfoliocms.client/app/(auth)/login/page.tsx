@@ -43,7 +43,18 @@ export default function LoginPage() {
       }
 
       const responseData = await res.json();
-      const token = responseData.data?.token || responseData.token;
+
+      // Try all common token response shapes from ASP.NET Core APIs
+      const token =
+        responseData.data?.token ??
+        responseData.data?.accessToken ??
+        responseData.token ??
+        responseData.accessToken ??
+        null;
+
+      if (!token) {
+        throw new Error('Login succeeded but no token was returned. Check the API response shape.');
+      }
 
       const isProduction = process.env.NODE_ENV === 'production';
       document.cookie = `accessToken=${token}; path=/; max-age=86400; ${isProduction ? 'secure; ' : ''}samesite=strict`;
