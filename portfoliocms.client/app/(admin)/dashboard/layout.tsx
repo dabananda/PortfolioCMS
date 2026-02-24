@@ -3,6 +3,7 @@
 import { useSidebarStore } from '../../../store/useSidebarStore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import QueryProvider from '@/providers/QueryProvider';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isOpen, toggleSidebar } = useSidebarStore();
@@ -56,7 +57,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Dynamic Page Content */}
-        <div className='flex-1 overflow-auto p-8'>{children}</div>
+        <div className='flex-1 overflow-auto p-8'>
+          <QueryProvider>{children}</QueryProvider>
+        </div>
       </main>
     </div>
   );
