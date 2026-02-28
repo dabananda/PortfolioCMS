@@ -12,20 +12,35 @@ namespace PortfolioCMS.Server.Application.Mappings
 
             return new UserProfileResponse
             {
-                Id = entity.Id,
-                UserId = entity.UserId,
                 FirstName = user.FirstName,
-                LastName = user.LastName,
-                Email = user.Email!,
+                LastName  = user.LastName,
+                Email     = user.Email!,
+
+                HasProfile  = true,
+                Id          = entity.Id,
+                UserId      = entity.UserId,
                 DateOfBirth = entity.DateOfBirth,
-                Status = entity.Status,
-                HeadLine = entity.HeadLine,
-                ImageUrl = entity.ImageUrl,
-                ResumeUrl = entity.ResumeUrl,
-                Location = entity.Location,
-                IsPublic = entity.IsPublic,
-                CreatedAt = entity.CreatedAt,
-                UpdatedAt = entity.UpdatedAt
+                Status      = entity.Status,
+                HeadLine    = entity.HeadLine,
+                ImageUrl    = entity.ImageUrl,
+                ResumeUrl   = entity.ResumeUrl,
+                Location    = entity.Location,
+                IsPublic    = entity.IsPublic,
+                CreatedAt   = entity.CreatedAt,
+                UpdatedAt   = entity.UpdatedAt,
+            };
+        }
+
+        public static UserProfileResponse ToEmptyResponse(ApplicationUser user)
+        {
+            ArgumentNullException.ThrowIfNull(user);
+
+            return new UserProfileResponse
+            {
+                FirstName  = user.FirstName,
+                LastName   = user.LastName,
+                Email      = user.Email!,
+                HasProfile = false,
             };
         }
 
@@ -35,14 +50,14 @@ namespace PortfolioCMS.Server.Application.Mappings
 
             return new UserProfile
             {
-                UserId = userId,
+                UserId      = userId,
                 DateOfBirth = request.DateOfBirth,
-                Status = request.Status,
-                HeadLine = request.HeadLine.Trim(),
-                ImageUrl = request.ImageUrl?.Trim(),
-                ResumeUrl = request.ResumeUrl?.Trim(),
-                Location = request.Location?.Trim(),
-                IsPublic = request.IsPublic
+                Status      = request.Status,
+                HeadLine    = request.HeadLine.Trim(),
+                ImageUrl    = request.ImageUrl?.Trim(),
+                ResumeUrl   = request.ResumeUrl?.Trim(),
+                Location    = request.Location?.Trim(),
+                IsPublic    = request.IsPublic,
             };
         }
 
@@ -52,12 +67,12 @@ namespace PortfolioCMS.Server.Application.Mappings
             ArgumentNullException.ThrowIfNull(entity);
 
             entity.DateOfBirth = request.DateOfBirth;
-            entity.Status = request.Status;
-            entity.HeadLine = request.HeadLine.Trim();
-            entity.ImageUrl = request.ImageUrl?.Trim();
-            entity.ResumeUrl = request.ResumeUrl?.Trim();
-            entity.Location = request.Location?.Trim();
-            entity.IsPublic = request.IsPublic;
+            entity.Status      = request.Status;
+            entity.HeadLine    = request.HeadLine.Trim();
+            entity.ImageUrl    = request.ImageUrl?.Trim();
+            entity.ResumeUrl   = request.ResumeUrl?.Trim();
+            entity.Location    = request.Location?.Trim();
+            entity.IsPublic    = request.IsPublic;
         }
     }
 }

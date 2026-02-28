@@ -26,18 +26,29 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             _userManager = userManager;
         }
 
-        public async Task<UserProfileResponse?> GetMyProfileAsync()
+        /// <summary>
+        /// Always returns a non-null response.
+        /// For new users who have not created a profile yet, returns a skeleton
+        /// response with only their identity data (FirstName, LastName, Email)
+        /// and HasProfile = false, so the frontend knows to call POST instead of PUT.
+        /// </summary>
+        public async Task<UserProfileResponse> GetMyProfileAsync()
         {
             var userId = _currentUserService.GetUserIdOrThrow();
 
+            // We always need the ApplicationUser to get FirstName / LastName / Email.
+            var user = await _userManager.FindByIdAsync(userId.ToString())
+                ?? throw new AppNotFoundException("Authenticated user not found.");
+
             var profile = await _context.UserProfiles
                 .AsNoTracking()
-                .Include(p => p.User)
                 .FirstOrDefaultAsync(p => p.UserId == userId);
 
-            if (profile is null) return null;
+            // No profile row yet — return skeleton with identity data only.
+            if (profile is null)
+                return UserProfileMapper.ToEmptyResponse(user);
 
-            return UserProfileMapper.ToResponse(profile, profile.User!);
+            return UserProfileMapper.ToResponse(profile, user);
         }
 
         public async Task<UserProfileResponse> CreateAsync(CreateUserProfileRequest request)
@@ -53,10 +64,10 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             await _context.UserProfiles.AddAsync(entity);
             await _context.SaveChangesAsync();
 
-            // Reload with user navigation for the response
-            await _context.Entry(entity).Reference(p => p.User).LoadAsync();
+            var user = await _userManager.FindByIdAsync(userId.ToString())
+                ?? throw new AppNotFoundException("Authenticated user not found.");
 
-            return UserProfileMapper.ToResponse(entity, entity.User!);
+            return UserProfileMapper.ToResponse(entity, user);
         }
 
         public async Task<UserProfileResponse> UpdateAsync(UpdateUserProfileRequest request)
@@ -64,14 +75,16 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             var userId = _currentUserService.GetUserIdOrThrow();
 
             var entity = await _context.UserProfiles
-                .Include(p => p.User)
                 .FirstOrDefaultAsync(p => p.UserId == userId)
                 ?? throw new AppNotFoundException("Profile not found. Create one first.");
 
             UserProfileMapper.ApplyUpdate(request, entity);
             await _context.SaveChangesAsync();
 
-            return UserProfileMapper.ToResponse(entity, entity.User!);
+            var user = await _userManager.FindByIdAsync(userId.ToString())
+                ?? throw new AppNotFoundException("Authenticated user not found.");
+
+            return UserProfileMapper.ToResponse(entity, user);
         }
     }
 }

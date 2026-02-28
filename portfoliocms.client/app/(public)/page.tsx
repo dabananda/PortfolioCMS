@@ -1,66 +1,57 @@
-type Project = {
-  id: string;
-  title: string;
-  shortDescription: string;
-  technologies: string[];
-};
+import { getPortfolio, getBlogPosts } from './lib/api';
+import HeroSection from './components/sections/HeroSection';
+import SkillsSection from './components/sections/SkillsSection';
+import ExperienceEducationSection from './components/sections/ExperienceEducationSection';
+import ProjectsSection from './components/sections/ProjectsSection';
+import CertificationsSection from './components/sections/CertificationsSection';
+import ReviewsSection from './components/sections/ReviewsSection';
+import ExtraCurricularSection from './components/sections/ExtraCurricularSection';
+import ProblemSolvingSection from './components/sections/ProblemSolvingSection';
+import LatestBlogsSection from './components/sections/LatestBlogsSection';
+import ContactSection from './components/sections/ContactSection';
 
-async function getProjects(): Promise<Project[]> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/project`, {
-    next: { revalidate: 60 },
-  });
-
-  if (!response.ok) {
-    console.log('Failed to fetch projects');
-    return [];
-  }
-
-  const json = await response.json();
-
-  return json.data || json;
-}
+export const revalidate = 60;
 
 export default async function Homepage() {
-  const projects = await getProjects();
-  return (
-    <div className='max-w-4xl mx-auto space-y-8'>
-      <h1 className='text-4xl font-extrabold tracking-tight'>
-        Hello, I am a Fullstack Developer 👋
-      </h1>
-      <p className='text-lg text-slate-600'>
-        I build fast, secure, and beautiful web applications using .NET and Next.js.
-      </p>
-      <section className='pt-8'>
-        <h2 className='text-2xl font-bold mb-4'>My Latest Projects</h2>
+  const [portfolio, blogData] = await Promise.all([
+    getPortfolio(),
+    getBlogPosts({ page: 1, pageSize: 3 }),
+  ]);
 
-        {projects.length === 0 ? (
-          <p className='text-slate-500 italic'>No projects found. Is the .NET server running?</p>
-        ) : (
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-            {projects.map((project) => (
-              <div
-                key={project.id}
-                className='p-6 bg-white rounded-xl shadow-sm border border-slate-200'
-              >
-                <h3 className='font-bold text-lg'>{project.title}</h3>
-                <p className='text-slate-600 mt-2'>{project.shortDescription}</p>
-                {project.technologies && (
-                  <div className='flex flex-wrap gap-2 mt-4'>
-                    {project.technologies.map((tech) => (
-                      <span
-                        key={tech}
-                        className='px-2 py-1 bg-slate-100 text-xs rounded-md'
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+  if (!portfolio) {
+    return (
+      <div className="flex items-center justify-center min-h-[80vh]">
+        <div className="text-center">
+          <div
+            className="size-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: 'rgba(59,43,238,0.15)', color: '#7c6fff' }}
+          >
+            <span className="material-symbols-outlined text-[32px]">error_outline</span>
           </div>
-        )}
-      </section>
-    </div>
+          <h1 className="font-display text-2xl font-bold text-white mb-2">Portfolio Unavailable</h1>
+          <p className="text-slate-500 text-sm">
+            Could not load portfolio data. Please check the server configuration.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const { profile, skills, workExperiences, educations, projects, certifications, socialLinks, reviews, extraCurricularActivities, problemSolvings } = portfolio;
+  const blogPosts = blogData?.items ?? [];
+
+  return (
+    <>
+      <HeroSection profile={profile} socialLinks={socialLinks} />
+      <SkillsSection skills={skills} />
+      <ExperienceEducationSection workExperiences={workExperiences} educations={educations} />
+      <ProjectsSection projects={projects} />
+      <CertificationsSection certifications={certifications} />
+      <ExtraCurricularSection activities={extraCurricularActivities} />
+      <ProblemSolvingSection problemSolvings={problemSolvings} />
+      <ReviewsSection reviews={reviews} />
+      <LatestBlogsSection posts={blogPosts} />
+      <ContactSection socialLinks={socialLinks} />
+    </>
   );
 }

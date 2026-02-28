@@ -28,76 +28,70 @@ namespace PortfolioCMS.Server.Infrastructure.Services
 
             var userId = user.Id;
 
-            // Fan-out parallel queries for performance
-            var profileTask = _context.UserProfiles
+            // Sequential awaits to avoid DbContext concurrency violations.
+            // DbContext is not thread-safe; Task.WhenAll causes concurrent operations on the same instance.
+            var profile = await _context.UserProfiles
                 .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.UserId == userId);
+                .FirstOrDefaultAsync(p => p.UserId == userId)
+                ?? throw new AppNotFoundException($"Portfolio for '{username}' is not set up yet.");
 
-            var skillsTask = _context.Skills
+            // Privacy gate — checked early so we skip remaining queries if private
+            if (!profile.IsPublic)
+                throw new AppNotFoundException($"Portfolio for '{username}' was not found.");
+
+            var skills = await _context.Skills
                 .AsNoTracking()
                 .Where(s => s.UserId == userId)
                 .OrderBy(s => s.Category).ThenBy(s => s.SkillName)
                 .ToListAsync();
 
-            var educationsTask = _context.Educations
+            var educations = await _context.Educations
                 .AsNoTracking()
                 .Where(e => e.UserId == userId)
                 .OrderByDescending(e => e.StartDate)
                 .ToListAsync();
 
-            var workExperiencesTask = _context.WorkExperiences
+            var workExperiences = await _context.WorkExperiences
                 .AsNoTracking()
                 .Where(w => w.UserId == userId)
                 .OrderByDescending(w => w.StartDate)
                 .ToListAsync();
 
-            var projectsTask = _context.Projects
+            var projects = await _context.Projects
                 .AsNoTracking()
                 .Where(p => p.UserId == userId)
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
 
-            var certificationsTask = _context.Certifications
+            var certifications = await _context.Certifications
                 .AsNoTracking()
                 .Where(c => c.UserId == userId)
                 .OrderByDescending(c => c.DateObtained)
                 .ToListAsync();
 
-            var socialLinksTask = _context.SocialLinks
+            var socialLinks = await _context.SocialLinks
                 .AsNoTracking()
                 .Where(s => s.UserId == userId)
                 .OrderBy(s => s.Name)
                 .ToListAsync();
 
-            var reviewsTask = _context.Reviews
+            var reviews = await _context.Reviews
                 .AsNoTracking()
                 .Where(r => r.UserId == userId)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToListAsync();
 
-            var activitiesTask = _context.ExtraCurricularActivities
+            var activities = await _context.ExtraCurricularActivities
                 .AsNoTracking()
                 .Where(a => a.UserId == userId)
                 .OrderByDescending(a => a.StartDate)
                 .ToListAsync();
 
-            var problemSolvingsTask = _context.ProblemSolvings
+            var problemSolvings = await _context.ProblemSolvings
                 .AsNoTracking()
                 .Where(p => p.UserId == userId)
                 .OrderBy(p => p.JudgeName)
                 .ToListAsync();
-
-            await Task.WhenAll(
-                profileTask, skillsTask, educationsTask, workExperiencesTask,
-                projectsTask, certificationsTask, socialLinksTask, reviewsTask,
-                activitiesTask, problemSolvingsTask);
-
-            var profile = profileTask.Result
-                ?? throw new AppNotFoundException($"Portfolio for '{username}' is not set up yet.");
-
-            // Privacy gate
-            if (!profile.IsPublic)
-                throw new AppNotFoundException($"Portfolio for '{username}' was not found.");
 
             return new PublicPortfolioResponse
             {
@@ -111,17 +105,17 @@ namespace PortfolioCMS.Server.Infrastructure.Services
                     ImageUrl = profile.ImageUrl,
                     ResumeUrl = profile.ResumeUrl,
                     Location = profile.Location,
-                    DateOfBirth = (DateOnly) profile.DateOfBirth
+                    DateOfBirth = (DateOnly)profile.DateOfBirth
                 },
-                Skills = SkillMapper.ToResponseList(skillsTask.Result),
-                Educations = EducationMapper.ToResponseList(educationsTask.Result),
-                WorkExperiences = WorkExperienceMapper.ToResponseList(workExperiencesTask.Result),
-                Projects = ProjectMapper.ToResponseList(projectsTask.Result),
-                Certifications = CertificationMapper.ToResponseList(certificationsTask.Result),
-                SocialLinks = SocialLinkMapper.ToResponseList(socialLinksTask.Result),
-                Reviews = ReviewMapper.ToResponseList(reviewsTask.Result),
-                ExtraCurricularActivities = ExtraCurricularActivityMapper.ToResponseList(activitiesTask.Result),
-                ProblemSolvings = ProblemSolvingMapper.ToResponseList(problemSolvingsTask.Result)
+                Skills = SkillMapper.ToResponseList(skills),
+                Educations = EducationMapper.ToResponseList(educations),
+                WorkExperiences = WorkExperienceMapper.ToResponseList(workExperiences),
+                Projects = ProjectMapper.ToResponseList(projects),
+                Certifications = CertificationMapper.ToResponseList(certifications),
+                SocialLinks = SocialLinkMapper.ToResponseList(socialLinks),
+                Reviews = ReviewMapper.ToResponseList(reviews),
+                ExtraCurricularActivities = ExtraCurricularActivityMapper.ToResponseList(activities),
+                ProblemSolvings = ProblemSolvingMapper.ToResponseList(problemSolvings)
             };
         }
 
@@ -130,7 +124,7 @@ namespace PortfolioCMS.Server.Infrastructure.Services
             var user = await _userManager.FindByNameAsync(username)
                 ?? throw new AppNotFoundException($"Portfolio for '{username}' was not found.");
 
-            // Enforce privacy � block blog access too if portfolio is private
+            // Enforce privacy — block blog access too if portfolio is private
             var profile = await _context.UserProfiles
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.UserId == user.Id);

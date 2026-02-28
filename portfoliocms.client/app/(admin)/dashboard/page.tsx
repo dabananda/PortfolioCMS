@@ -190,18 +190,12 @@ export default function DashboardPage() {
       icon: BriefcaseBusiness,
       iconColor: 'text-amber-400',
     },
-    {
-      label: 'Profile Views',
-      value: '1.2k',
-      icon: Eye,
-      iconColor: 'text-cyan-400',
-    },
   ];
 
   return (
     <div className='space-y-5'>
       {/* Stat Cards */}
-      <div className='grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3'>
+      <div className='grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3'>
         {allStats.map(({ label, value, icon: Icon, iconColor }) => (
           <div
             key={label}

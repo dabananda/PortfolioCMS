@@ -18,27 +18,30 @@ import {
   EyeOff,
   ExternalLink,
   X,
-  ZoomIn,
   Mail,
   Download,
 } from "lucide-react";
-import Link from "next/link";
 import Image from "next/image";
 
 type UserProfile = {
-  id: string;
-  userId: string;
+  // Always present — returned even when no profile row exists yet
   firstName: string;
   lastName: string;
   email: string;
-  dateOfBirth: string;
-  status: number;
-  headLine: string;
+  // False when the user has never saved a profile; the frontend uses this
+  // to decide between POST (create) and PUT (update).
+  hasProfile: boolean;
+  // Present only when hasProfile === true
+  id?: string;
+  userId?: string;
+  dateOfBirth?: string;
+  status?: number;
+  headLine?: string;
   imageUrl?: string;
   resumeUrl?: string;
   location?: string;
-  isPublic: boolean;
-  createdAt: string;
+  isPublic?: boolean;
+  createdAt?: string;
   updatedAt?: string;
 };
 
@@ -216,12 +219,6 @@ function ResumeSection({
             {decodeURIComponent(value.split("/").pop() ?? value).slice(0, 50)}
           </span>
           <div className="flex items-center gap-1 shrink-0">
-            {/* <button
-              onClick={() => setPreview((v) => !v)}
-              className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors ${preview ? "bg-violet-600/20 text-violet-300 border border-violet-500/20" : "text-white/40 hover:text-white/70 hover:bg-white/6"}`}
-            >
-              <ZoomIn size={11} /> {preview ? "Hide" : "Preview"}
-            </button> */}
             <a
               href={value}
               target="_blank"
@@ -268,7 +265,6 @@ export default function ProfilePage() {
   const [toast, setToast] = useState<Toast>(null);
   const [imgUploading, setImgUploading] = useState(false);
   const [resumeUploading, setResumeUploading] = useState(false);
-  const [hasProfile, setHasProfile] = useState(true);
 
   const [form, setForm] = useState({
     dateOfBirth: "",
@@ -280,32 +276,33 @@ export default function ProfilePage() {
     isPublic: false,
   });
 
-  const {
-    data: profile,
-    isLoading,
-    error: profileError,
-  } = useQuery<UserProfile>({
+  const { data: profile, isLoading } = useQuery<UserProfile>({
     queryKey: ["user-profile"],
     queryFn: async () => {
       const res = await fetchWithAuth("userprofile");
       const json = await res.json();
+      // The API now always returns a non-null object, even for new users.
+      // hasProfile=false means no profile row exists yet.
       return json.data ?? json;
     },
     retry: false,
   });
 
   useEffect(() => {
-    if (profile) {
-      setHasProfile(true);
-      // API returns status as string enum name (JsonStringEnumConverter)
-      const rawStatus = profile.status as unknown as string | number;
+    if (!profile) return;
+    // Populate the form only when a real profile row exists
+    if (profile.hasProfile) {
+      const rawStatus = profile.status as unknown as
+        | string
+        | number
+        | undefined;
       const statusValue =
         typeof rawStatus === "string"
           ? (STATUS_STRING_MAP[rawStatus] ?? 0)
-          : Number(rawStatus);
+          : Number(rawStatus ?? 0);
       setForm({
         dateOfBirth: profile.dateOfBirth
-          ? (profile.dateOfBirth as unknown as string).split("T")[0]
+          ? (profile.dateOfBirth as string).split("T")[0]
           : "",
         status: statusValue,
         headLine: profile.headLine ?? "",
@@ -315,8 +312,13 @@ export default function ProfilePage() {
         isPublic: profile.isPublic ?? false,
       });
     }
-    if (profileError) setHasProfile(false);
-  }, [profile, profileError]);
+    // If hasProfile is false we leave the form at its blank defaults so the
+    // user can fill it in and POST a new profile.
+  }, [profile]);
+
+  // ── FIXED: hasProfile now comes directly from the API response, not from
+  // local state that was being incorrectly inferred from fetch errors.
+  const hasProfile = profile?.hasProfile ?? false;
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -329,6 +331,7 @@ export default function ProfilePage() {
         location: form.location || undefined,
         isPublic: form.isPublic,
       };
+      // Use the server-side truth for POST vs PUT — never guess from local state
       const method = hasProfile ? "PUT" : "POST";
       const res = await fetchWithAuthMutation("userprofile", method, payload);
       if (!res.ok) {
@@ -338,7 +341,6 @@ export default function ProfilePage() {
       return res.json();
     },
     onSuccess: () => {
-      setHasProfile(true);
       qc.invalidateQueries({ queryKey: ["user-profile"] });
       setToast({ type: "success", msg: "Profile saved successfully!" });
     },
@@ -403,9 +405,14 @@ export default function ProfilePage() {
       </div>
     );
 
-  const fullName = profile
-    ? `${profile.firstName} ${profile.lastName}`
-    : "Your Profile";
+  // ── FIXED: firstName and lastName now always come from the API response
+  // (populated from ApplicationUser regardless of whether a profile row exists).
+  // This replaces the old broken: `${profile.firstName} ${profile.lastName}`
+  // which produced "undefined undefined" for new users.
+  const fullName =
+    profile?.firstName && profile?.lastName
+      ? `${profile.firstName} ${profile.lastName}`
+      : "Your Profile";
 
   return (
     <div className="flex gap-6">
@@ -456,7 +463,7 @@ export default function ProfilePage() {
                 </p>
               )}
 
-              {/* Status + Location */}
+              {/* Status + Visibility */}
               <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
                 {currentStatus && (
                   <div
@@ -468,21 +475,6 @@ export default function ProfilePage() {
                     {currentStatus.label}
                   </div>
                 )}
-                {/* Visibility */}
-                  <span
-                    className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border ${
-                      form.isPublic
-                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                        : "bg-white/5 border-white/8 text-white/30"
-                    }`}
-                  >
-                    {form.isPublic ? <Eye size={9} /> : <EyeOff size={9} />}
-                    {form.isPublic ? "Public" : "Private"}
-                  </span>
-              </div>
-
-              {/* Visibility */}
-              <div className="mt-3">
                 <span
                   className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border ${
                     form.isPublic
@@ -490,13 +482,19 @@ export default function ProfilePage() {
                       : "bg-white/5 border-white/8 text-white/30"
                   }`}
                 >
-                  {form.location && (
-                <span className="flex items-center gap-1 text-[10px] text-white/35">
-                  <MapPin size={9} /> {form.location}
-                </span>
-              )}
+                  {form.isPublic ? <Eye size={9} /> : <EyeOff size={9} />}
+                  {form.isPublic ? "Public" : "Private"}
                 </span>
               </div>
+
+              {/* Location */}
+              {form.location && (
+                <div className="mt-2">
+                  <span className="inline-flex items-center gap-1 text-[10px] text-white/35">
+                    <MapPin size={9} /> {form.location}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Action links */}
