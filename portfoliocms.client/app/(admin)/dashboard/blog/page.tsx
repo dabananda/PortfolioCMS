@@ -18,6 +18,8 @@ import {
   Globe,
   Tag,
   X,
+  Search,
+  Filter,
 } from "lucide-react";
 import { DeleteConfirmModal } from "@/components/ui/DeleteConfirmModal";
 
@@ -227,6 +229,8 @@ export default function BlogPage() {
   const [deleteTarget, setDeleteTarget] = useState<BlogPost | null>(null);
   const [toast, setToast] = useState<Toast>(null);
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [activeTab, setActiveTab] = useState<"posts" | "categories">("posts");
   const [catModal, setCatModal] = useState<{
     open: boolean;
@@ -295,13 +299,21 @@ export default function BlogPage() {
       }),
   });
 
-  const filtered = posts.filter((p) =>
-    filter === "all"
-      ? true
-      : filter === "published"
-        ? p.isPublished
-        : !p.isPublished,
-  );
+  const filtered = posts.filter((p) => {
+    const matchesStatus =
+      filter === "all"
+        ? true
+        : filter === "published"
+          ? p.isPublished
+          : !p.isPublished;
+    const matchesSearch =
+      !search ||
+      p.title.toLowerCase().includes(search.toLowerCase()) ||
+      (p.summary ?? "").toLowerCase().includes(search.toLowerCase());
+    const matchesCategory =
+      categoryFilter === "all" || p.blogPostCategoryId === categoryFilter;
+    return matchesStatus && matchesSearch && matchesCategory;
+  });
 
   const publishedCount = posts.filter((p) => p.isPublished).length;
   const draftCount = posts.filter((p) => !p.isPublished).length;
@@ -368,18 +380,104 @@ export default function BlogPage() {
       {activeTab === "posts" && (
         <>
           {/* Post controls */}
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <p className="text-sm text-white/35">
-              {posts.length} total ·{" "}
-              <span className="text-emerald-400">
-                {publishedCount} published
-              </span>{" "}
-              ·{" "}
-              <span className="text-amber-400">
-                {draftCount} draft{draftCount !== 1 ? "s" : ""}
-              </span>
-            </p>
-            <div className="flex items-center gap-3">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <p className="text-sm text-white/35">
+                {posts.length} total ·{" "}
+                <span className="text-emerald-400">
+                  {publishedCount} published
+                </span>{" "}
+                ·{" "}
+                <span className="text-amber-400">
+                  {draftCount} draft{draftCount !== 1 ? "s" : ""}
+                </span>
+                {filtered.length !== posts.length && (
+                  <span className="text-violet-400 ml-1">
+                    · {filtered.length} shown
+                  </span>
+                )}
+              </p>
+              <button
+                onClick={() => router.push("/dashboard/blog/new")}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-all shadow-lg shadow-violet-500/20 active:scale-95"
+              >
+                <Plus size={15} /> New Post
+              </button>
+            </div>
+
+            {/* Search + Filters row */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Search */}
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none"
+                />
+                <input
+                  type="text"
+                  placeholder="Search posts…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 rounded-lg bg-[#0d1117] border border-white/8 text-sm text-white/80 placeholder-white/25 focus:outline-none focus:border-violet-500/50 transition-all"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60 transition-colors"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+
+              {/* Category filter */}
+              <div className="relative">
+                <Filter
+                  size={12}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none"
+                />
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  style={{ colorScheme: "dark", backgroundColor: "#0d1117" }}
+                  className="pl-8 pr-8 py-2 rounded-lg border border-white/8 text-sm text-white/70 focus:outline-none focus:border-violet-500/50 transition-all cursor-pointer appearance-none"
+                >
+                  <option
+                    value="all"
+                    style={{ backgroundColor: "#161b22", color: "#e2e8f0" }}
+                  >
+                    All Categories
+                  </option>
+                  {categories.map((c) => (
+                    <option
+                      key={c.id}
+                      value={c.id}
+                      style={{ backgroundColor: "#161b22", color: "#e2e8f0" }}
+                    >
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    className="text-white/30"
+                  >
+                    <path
+                      d="M2 4l4 4 4-4"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Status filter */}
               <div className="flex items-center bg-white/4 border border-white/8 rounded-lg p-0.5">
                 {(["all", "published", "draft"] as const).map((f) => (
                   <button
@@ -395,12 +493,6 @@ export default function BlogPage() {
                   </button>
                 ))}
               </div>
-              <button
-                onClick={() => router.push("/dashboard/blog/new")}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-all shadow-lg shadow-violet-500/20 active:scale-95"
-              >
-                <Plus size={15} /> New Post
-              </button>
             </div>
           </div>
 

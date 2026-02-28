@@ -216,12 +216,12 @@ function ResumeSection({
             {decodeURIComponent(value.split("/").pop() ?? value).slice(0, 50)}
           </span>
           <div className="flex items-center gap-1 shrink-0">
-            <button
+            {/* <button
               onClick={() => setPreview((v) => !v)}
               className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors ${preview ? "bg-violet-600/20 text-violet-300 border border-violet-500/20" : "text-white/40 hover:text-white/70 hover:bg-white/6"}`}
             >
               <ZoomIn size={11} /> {preview ? "Hide" : "Preview"}
-            </button>
+            </button> */}
             <a
               href={value}
               target="_blank"
