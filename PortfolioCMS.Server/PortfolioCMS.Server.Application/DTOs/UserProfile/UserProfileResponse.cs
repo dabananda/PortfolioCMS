@@ -9,7 +9,7 @@ namespace PortfolioCMS.Server.Application.DTOs.UserProfile
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-        public DateOnly DateOfBirth { get; set; }
+        public DateOnly? DateOfBirth { get; set; }
         public UserStatus Status { get; set; }
         public string HeadLine { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }

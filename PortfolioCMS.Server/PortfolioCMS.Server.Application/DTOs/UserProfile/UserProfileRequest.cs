@@ -5,8 +5,7 @@ namespace PortfolioCMS.Server.Application.DTOs.UserProfile
 {
     public class CreateUserProfileRequest
     {
-        [Required(ErrorMessage = "Date of birth is required.")]
-        public DateOnly DateOfBirth { get; set; }
+        public DateOnly? DateOfBirth { get; set; }
 
         [Required(ErrorMessage = "Status is required.")]
         public UserStatus Status { get; set; } = UserStatus.Available;
