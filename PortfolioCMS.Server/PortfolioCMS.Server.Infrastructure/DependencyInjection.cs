@@ -163,7 +163,7 @@ namespace PortfolioCMS.Server.Infrastructure
             });
         }
 
-        // Health Checks — SQL Server connectivity via EF Core
+        // Health Checks ï¿½ SQL Server connectivity via EF Core
         private static void AddHealthChecks(IServiceCollection services)
         {
             services.AddHealthChecks()
