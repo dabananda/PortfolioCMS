@@ -1,6 +1,6 @@
 [build]
   base    = "portfoliocms.client"
-  command = "npm run build"
+  command = "npm run build -- --no-turbopack"
   publish = ".next"
 
 [[plugins]]
