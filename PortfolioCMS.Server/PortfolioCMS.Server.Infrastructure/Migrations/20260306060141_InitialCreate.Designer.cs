@@ -12,8 +12,8 @@ using PortfolioCMS.Server.Infrastructure.Data;
 namespace PortfolioCMS.Server.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260222150918_CloudinaryFileUploadService")]
-    partial class CloudinaryFileUploadService
+    [Migration("20260306060141_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1037,7 +1037,7 @@ namespace PortfolioCMS.Server.Infrastructure.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateOnly>("DateOfBirth")
+                    b.Property<DateOnly?>("DateOfBirth")
                         .HasColumnType("date");
 
                     b.Property<string>("HeadLine")

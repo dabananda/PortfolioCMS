@@ -50,6 +50,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
                 var password = adminSection["Password"] ?? throw new InvalidOperationException("AdminUser:Password is not configured.");
                 var firstName = adminSection["FirstName"] ?? "Admin";
                 var lastName = adminSection["LastName"] ?? "User";
+                var userName = adminSection["UserName"] ?? "admin";
 
                 if (await userManager.FindByEmailAsync(email) is not null)
                 {
@@ -59,7 +60,7 @@ namespace PortfolioCMS.Server.Infrastructure.Data
 
                 var adminUser = new ApplicationUser
                 {
-                    UserName = email,
+                    UserName = userName,
                     Email = email,
                     FirstName = firstName,
                     LastName = lastName,
