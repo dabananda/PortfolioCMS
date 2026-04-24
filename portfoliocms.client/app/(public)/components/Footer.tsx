@@ -1,5 +1,8 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { SocialLink } from "../types/portfolio";
+import type { SocialLink, PublicProfile } from "../types/portfolio";
 import { getPortfolio } from "../lib/api";
 
 function getSocialPath(name: string): string {
@@ -11,10 +14,19 @@ function getSocialPath(name: string): string {
   return "";
 }
 
-export default async function Footer() {
-  const portfolio = await getPortfolio();
-  const socialLinks: SocialLink[] = portfolio?.socialLinks ?? [];
-  const profile = portfolio?.profile;
+export default function Footer() {
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [profile, setProfile] = useState<PublicProfile | null>(null);
+
+  useEffect(() => {
+    getPortfolio().then((data) => {
+      if (data) {
+        setSocialLinks(data.socialLinks ?? []);
+        setProfile(data.profile ?? null);
+      }
+    });
+  }, []);
+
   const name = profile
     ? `${profile.firstName} ${profile.lastName}`
     : "Portfolio";
@@ -85,8 +97,14 @@ export default async function Footer() {
         <div className="mt-8 pt-6 border-t border-white/5 text-center">
           <p className="text-slate-600 text-sm">
             © {new Date().getFullYear()}{" "}
-            <a href="https://github.com/dabananda" target="_blank">{name}</a>. All rights
-            reserved.
+            <a
+              href="https://github.com/dabananda"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {name}
+            </a>
+            . All rights reserved.
           </p>
         </div>
       </div>
