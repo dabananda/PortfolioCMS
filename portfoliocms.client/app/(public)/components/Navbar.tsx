@@ -4,7 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function Navbar() {
+interface NavbarProps {
+  resumeUrl?: string;
+}
+
+export default function Navbar({ resumeUrl }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
@@ -18,7 +22,14 @@ export default function Navbar() {
 
   // Track which section is in view using IntersectionObserver
   useEffect(() => {
-    const sectionIds = ["home", "about", "projects", "contact"];
+    const sectionIds = [
+      "home",
+      "about",
+      "experience",
+      "projects",
+      "education",
+      "contact",
+    ];
     const observers: IntersectionObserver[] = [];
 
     sectionIds.forEach((id) => {
@@ -41,26 +52,45 @@ export default function Navbar() {
 
   const navLinks = [
     { label: "Home", href: "/#home", section: "home" },
-    { label: "About", href: "/#about", section: "about" },
+    { label: "Experience", href: "/#experience", section: "experience" },
+    { label: "Skills", href: "/#skills", section: "skills" },
     { label: "Projects", href: "/#projects", section: "projects" },
-    { label: "Blog", href: "/blogs", section: null },
     { label: "Contact", href: "/#contact", section: "contact" },
+    { label: "Blogs", href: "/blogs", section: null },
   ];
 
   const isBlogPage = pathname?.startsWith("/blogs");
 
   const isActive = (link: (typeof navLinks)[0]) => {
     if (link.section === null) {
-      // Blog — active only when on the blog route
       return isBlogPage;
     }
-    // Hash links — active only on home route AND when that section is in view
     return !isBlogPage && activeSection === link.section;
+  };
+
+  // NEW: Custom click handler to prevent hash stacking
+  const handleLinkClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    link: (typeof navLinks)[0],
+  ) => {
+    if (link.section) {
+      // If we are already on the homepage, manually handle the scroll and URL update
+      if (pathname === "/") {
+        e.preventDefault();
+        const element = document.getElementById(link.section);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth" });
+          window.history.pushState(null, "", `/#${link.section}`);
+        }
+      }
+      setActiveSection(link.section);
+    }
+    setIsMobileOpen(false); // Always close mobile menu on click
   };
 
   return (
     <header
-      className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ${
+      className={`fixed top-0 z-50 w-full border-b transition-all duration-300 ${
         isScrolled
           ? "glass-nav border-white/8"
           : "bg-transparent border-transparent"
@@ -85,6 +115,7 @@ export default function Navbar() {
             <Link
               key={link.href}
               href={link.href}
+              onClick={(e) => handleLinkClick(e, link)}
               className={`text-sm font-medium transition-colors ${
                 isActive(link)
                   ? "text-white"
@@ -98,7 +129,12 @@ export default function Navbar() {
 
         {/* CTA */}
         <div className="hidden md:flex items-center gap-4">
-          <a href="#resume" className="btn-primary !py-2 !px-5 !text-sm">
+          <a
+            href={resumeUrl || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primary !py-2 !px-5 !text-sm"
+          >
             <span className="material-symbols-outlined text-[18px]">
               download
             </span>
@@ -126,7 +162,7 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                onClick={() => setIsMobileOpen(false)}
+                onClick={(e) => handleLinkClick(e, link)}
                 className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                   isActive(link)
                     ? "text-white bg-white/8"

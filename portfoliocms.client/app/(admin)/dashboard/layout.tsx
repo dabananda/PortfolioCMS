@@ -10,7 +10,8 @@ import { fetchWithAuth } from '@/lib/api';
 import {
   LayoutDashboard, User, Code2, FolderOpen, BookOpen,
   Settings, LogOut, Bell, Plus, Menu, X, ChevronRight,
-  Home, GraduationCap, BriefcaseBusiness, Mail
+  Home, GraduationCap, BriefcaseBusiness, Mail,
+  BadgeCheck, Terminal, Sparkles, Star, Link2,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -20,6 +21,11 @@ const NAV_ITEMS = [
   { label: 'Skills', href: '/dashboard/skills', icon: Code2 },
   { label: 'Projects', href: '/dashboard/projects', icon: FolderOpen },
   { label: 'Education', href: '/dashboard/education', icon: GraduationCap },
+  { label: 'Certifications', href: '/dashboard/certifications', icon: BadgeCheck },
+  { label: 'Problem Solving', href: '/dashboard/problem-solving', icon: Terminal },
+  { label: 'Extra Curricular', href: '/dashboard/extra-curricular', icon: Sparkles },
+  { label: 'Reviews', href: '/dashboard/reviews', icon: Star },
+  { label: 'Social Links', href: '/dashboard/social-links', icon: Link2 },
   { label: 'Blog', href: '/dashboard/blog', icon: BookOpen },
   { label: 'Messages', href: '/dashboard/messages', icon: Mail },
 ];

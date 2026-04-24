@@ -1,4 +1,4 @@
-import type { Review } from '../../types/portfolio';
+import type { Review } from "../../types/portfolio";
 
 interface ReviewsSectionProps {
   reviews: Review[];
@@ -12,7 +12,7 @@ function StarRating({ rating }: { rating: number }) {
           key={star}
           className="material-symbols-outlined text-[16px]"
           style={{
-            color: star <= rating ? '#f59e0b' : '#374151',
+            color: star <= rating ? "#f59e0b" : "#374151",
             fontVariationSettings: star <= rating ? "'FILL' 1" : "'FILL' 0",
           }}
         >
@@ -24,66 +24,85 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 const AVATAR_COLORS = [
-  'from-violet-500 to-indigo-500',
-  'from-blue-500 to-cyan-500',
-  'from-emerald-500 to-teal-500',
-  'from-rose-500 to-pink-500',
-  'from-amber-500 to-orange-500',
+  "from-violet-500 to-indigo-500",
+  "from-blue-500 to-cyan-500",
+  "from-emerald-500 to-teal-500",
+  "from-rose-500 to-pink-500",
+  "from-amber-500 to-orange-500",
 ];
 
 export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
   if (!reviews.length) return null;
 
-  return (
-    <section className="py-20 relative overflow-hidden">
-      <div
-        className="absolute right-0 top-1/4 w-64 h-64 opacity-10 pointer-events-none"
-        style={{ background: '#3b2bee', filter: 'blur(100px)' }}
-      />
+  // Duplicate the reviews array to create a seamless infinite loop
+  const duplicatedReviews = [...reviews, ...reviews];
 
+  return (
+    <section id="reviews" className="py-20 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 md:px-10">
         <div className="text-center mb-16">
           <div className="section-badge mb-4 mx-auto">
-            <span className="material-symbols-outlined text-[14px]">format_quote</span>
+            <span className="material-symbols-outlined text-[14px]">star</span>
             Testimonials
           </div>
           <h2 className="font-display text-4xl md:text-5xl font-bold text-white">
             What People Say
           </h2>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {reviews.map((review, idx) => (
-            <div key={review.id} className="card-dark p-6 flex flex-col group hover:-translate-y-1 transition-transform">
-              {/* Stars */}
-              <div className="mb-4">
-                <StarRating rating={review.rating} />
-              </div>
+      {/* This outer container hides the overflow and allows the inner container
+        to be wider than the screen.
+      */}
+      <div className="w-full overflow-hidden relative">
+        {/* Optional: Add gradient fades to the left and right edges for a smoother look */}
+        <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-[#0f0e17] to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-[#0f0e17] to-transparent z-10 pointer-events-none" />
 
-              {/* Quote */}
-              <blockquote className="text-slate-300 text-sm leading-relaxed flex-1 relative">
-                <span
-                  className="absolute -top-2 -left-1 text-5xl leading-none opacity-20"
-                  style={{ color: '#3b2bee', fontFamily: 'Georgia, serif' }}
-                >
-                  &quot;
-                </span>
-                <p className="relative z-10 pl-3">{review.comment}</p>
-              </blockquote>
-
-              {/* Author */}
-              <div className="flex items-center gap-3 mt-5 pt-4 border-t border-white/5">
+        {/* The scrolling container */}
+        <div className="animate-scroll-left flex gap-6 px-4">
+          {duplicatedReviews.map((review, index) => (
+            <div
+              key={`${review.id}-${index}`}
+              className="card-dark p-6 w-[350px] shrink-0 rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-black/30 cursor-pointer"
+            >
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-4">
+                {/* Avatar */}
                 <div
-                  className={`size-10 rounded-full flex items-center justify-center text-sm font-bold text-white bg-gradient-to-br ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold bg-gradient-to-br ${
+                    AVATAR_COLORS[index % AVATAR_COLORS.length]
+                  }`}
                 >
-                  {review.name.slice(0, 2).toUpperCase()}
+                  {review.name?.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <p className="text-white font-semibold text-sm">{review.name}</p>
+
+                {/* Name + designation */}
+                <div className="flex flex-col">
+                  <h4 className="font-semibold text-white leading-none">
+                    {review.name}
+                  </h4>
                   {review.designation && (
-                    <p className="text-slate-500 text-xs">{review.designation}</p>
+                    <span className="text-xs text-[#7c6fff]">
+                      {review.designation}
+                    </span>
                   )}
                 </div>
+              </div>
+
+              {/* Rating */}
+              <div className="mb-3">
+                <StarRating rating={Math.round(review.rating)} />
+              </div>
+
+              {/* Comment */}
+              <p className="text-slate-300 text-sm leading-relaxed mb-5 italic">
+                “{review.comment}”
+              </p>
+
+              {/* Footer */}
+              <div className="text-xs text-slate-500">
+                {new Date(review.createdAt).toLocaleDateString()}
               </div>
             </div>
           ))}

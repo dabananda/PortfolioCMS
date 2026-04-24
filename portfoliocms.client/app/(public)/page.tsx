@@ -86,6 +86,7 @@ export default function Homepage() {
         getPortfolio(),
         getBlogPosts({ page: 1, pageSize: 3 }),
       ]);
+      console.log("Loaded portfolio:", portfolioData);
       setPortfolio(portfolioData);
       setBlogPosts(blogData?.items ?? []);
     }

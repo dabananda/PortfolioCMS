@@ -29,7 +29,7 @@ export default function ProjectsSection({ projects }: ProjectsSectionProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
           {projects.map((project, idx) => (
             <article
               key={project.id}
@@ -77,7 +77,7 @@ export default function ProjectsSection({ projects }: ProjectsSectionProps) {
                 </p>
 
                 {/* Technologies */}
-                {project.technologies.length > 0 && (
+                {/* {project.technologies.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-4">
                     {project.technologies.slice(0, 5).map((tech) => (
                       <span key={tech} className="skill-pill !text-xs !py-1 !px-2.5">{tech}</span>
@@ -88,7 +88,7 @@ export default function ProjectsSection({ projects }: ProjectsSectionProps) {
                       </span>
                     )}
                   </div>
-                )}
+                )} */}
 
                 {/* Links */}
                 <div className="flex items-center gap-3 mt-5 pt-4 border-t border-white/5">

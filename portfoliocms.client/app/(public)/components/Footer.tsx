@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import type { SocialLink, PublicProfile } from "../types/portfolio";
 import { getPortfolio } from "../lib/api";
 
@@ -37,70 +36,19 @@ export default function Footer() {
         background: "#0d0b1a",
         borderTop: "1px solid rgba(255,255,255,0.06)",
       }}
-      className="py-10 mt-20"
+      className="py-8" // Reduced py-10 to py-8
     >
       <div className="max-w-7xl mx-auto px-4 md:px-10">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex items-center justify-center size-8 rounded-lg bg-[#3b2bee]/20 text-[#7c6fff]">
-              <span className="material-symbols-outlined text-[16px]">
-                terminal
-              </span>
-            </div>
-            <span className="font-display font-bold text-white">{name}</span>
-          </Link>
-
-          <nav className="flex items-center gap-6">
-            {["Home", "About", "Projects", "Blog", "Contact"].map((item) => (
-              <Link
-                key={item}
-                href={item === "Blog" ? "/blogs" : `/#${item.toLowerCase()}`}
-                className="text-slate-500 hover:text-slate-300 text-sm transition-colors"
-              >
-                {item}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-4">
-            {socialLinks.slice(0, 4).map((link) => {
-              const path = getSocialPath(link.name);
-              return (
-                <a
-                  key={link.id}
-                  href={link.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={link.name}
-                  className="text-slate-500 hover:text-[#7c6fff] transition-colors"
-                >
-                  {path ? (
-                    <svg
-                      className="size-5"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path d={path} />
-                    </svg>
-                  ) : (
-                    <span className="text-sm font-medium">
-                      {link.name.slice(0, 2)}
-                    </span>
-                  )}
-                </a>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="mt-8 pt-6 border-t border-white/5 text-center">
+        <div className="text-center">
+          {" "}
+          {/* Removed mt-8 pt-6 border-t border-white/5 */}
           <p className="text-slate-600 text-sm">
             © {new Date().getFullYear()}{" "}
             <a
               href="https://github.com/dabananda"
               target="_blank"
               rel="noreferrer"
+              className="hover:text-[#7c6fff] transition-colors" // Added a subtle hover color
             >
               {name}
             </a>

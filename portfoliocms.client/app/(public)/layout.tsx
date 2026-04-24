@@ -1,13 +1,17 @@
-import type { Metadata } from 'next';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
+import type { Metadata } from "next";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import { getPortfolio } from "./lib/api";
 
 export const metadata: Metadata = {
-  title: 'Portfolio',
-  description: 'Personal portfolio and blog',
+  title: "Portfolio",
+  description: "Personal portfolio and blog",
 };
 
-export default function PublicLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function PublicLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  const portfolio = await getPortfolio();
   return (
     <>
       <style>{`
@@ -103,7 +107,7 @@ export default function PublicLayout({ children }: Readonly<{ children: React.Re
         .prose-dark img { border-radius: 8px; margin: 1em 0; max-width: 100%; }
       `}</style>
       <div className="public-root">
-        <Navbar />
+        <Navbar resumeUrl={portfolio?.profile?.resumeUrl} />
         <main>{children}</main>
         <Footer />
       </div>

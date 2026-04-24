@@ -124,3 +124,26 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Add this to globals.css */
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    /* Translate by exactly half the width since we duplicate the content */
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll-left {
+  /* 30s is the speed. Adjust this value to make it faster or slower */
+  animation: scroll-left 30s linear infinite;
+  display: flex;
+  width: max-content;
+}
+
+/* Pause the animation when the user hovers over the reviews */
+.animate-scroll-left:hover {
+  animation-play-state: paused;
+}

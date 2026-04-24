@@ -1,19 +1,19 @@
-import type { Skill } from '../../types/portfolio';
+import type { Skill } from "../../types/portfolio";
 
 const PROFICIENCY_COLORS: Record<number, string> = {
-  0: '#64748b',
-  1: '#3b82f6',
-  2: '#8b5cf6',
-  3: '#ec4899',
-  4: '#f59e0b',
+  0: "#64748b", // Slate
+  1: "#3b82f6", // Blue
+  2: "#8b5cf6", // Purple
+  3: "#ec4899", // Pink
+  4: "#f59e0b", // Amber
 };
 
 const PROFICIENCY_LABELS: Record<number, string> = {
-  0: 'Beginner',
-  1: 'Elementary',
-  2: 'Intermediate',
-  3: 'Advanced',
-  4: 'Expert',
+  0: "Beginner",
+  1: "Elementary",
+  2: "Intermediate",
+  3: "Advanced",
+  4: "Expert",
 };
 
 interface SkillsSectionProps {
@@ -22,7 +22,7 @@ interface SkillsSectionProps {
 
 function groupSkillsByCategory(skills: Skill[]): Record<string, Skill[]> {
   return skills.reduce<Record<string, Skill[]>>((acc, skill) => {
-    const cat = skill.category ?? 'Other';
+    const cat = skill.category ?? "Other";
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(skill);
     return acc;
@@ -36,11 +36,11 @@ export default function SkillsSection({ skills }: SkillsSectionProps) {
   const allSkillNames = skills.map((s) => s.skillName);
 
   return (
-    <section id="about" className="py-20 relative overflow-hidden">
+    <section id="skills" className="py-20 relative overflow-hidden">
       {/* Glow */}
       <div
         className="absolute left-1/2 top-0 -translate-x-1/2 w-96 h-48 opacity-10 pointer-events-none"
-        style={{ background: '#3b2bee', filter: 'blur(80px)' }}
+        style={{ background: "#3b2bee", filter: "blur(80px)" }}
       />
 
       <div className="max-w-7xl mx-auto px-4 md:px-10">
@@ -60,51 +60,88 @@ export default function SkillsSection({ skills }: SkillsSectionProps) {
 
         {/* Marquee */}
         <div className="relative w-full mb-16 overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-32 z-10 pointer-events-none"
-            style={{ background: 'linear-gradient(to right, #121022, transparent)' }}
+          <div
+            className="absolute left-0 top-0 bottom-0 w-32 z-10 pointer-events-none"
+            style={{
+              background: "linear-gradient(to right, #121022, transparent)",
+            }}
           />
-          <div className="absolute right-0 top-0 bottom-0 w-32 z-10 pointer-events-none"
-            style={{ background: 'linear-gradient(to left, #121022, transparent)' }}
+          <div
+            className="absolute right-0 top-0 bottom-0 w-32 z-10 pointer-events-none"
+            style={{
+              background: "linear-gradient(to left, #121022, transparent)",
+            }}
           />
           <div className="flex gap-4 animate-marquee whitespace-nowrap">
             {[...allSkillNames, ...allSkillNames].map((name, i) => (
-              <span key={i} className="skill-pill shrink-0">{name}</span>
+              <span key={i} className="skill-pill shrink-0">
+                {name}
+              </span>
             ))}
           </div>
         </div>
 
-        {/* Grouped */}
+        {/* Grouped Skills - Modern Tag Cloud Redesign */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Object.entries(grouped).map(([category, catSkills]) => (
-            <div key={category} className="card-dark p-6">
-              <h3 className="font-display font-semibold text-white mb-4 flex items-center gap-2">
-                <span
-                  className="size-2 rounded-full inline-block"
-                  style={{ background: '#3b2bee' }}
-                />
+            <div key={category} className="card-dark p-6 flex flex-col">
+              {/* Category Header with Icon */}
+              <h3 className="font-display font-semibold text-white mb-6 flex items-center gap-3">
+                <div
+                  className="size-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{
+                    background: "rgba(59,43,238,0.15)",
+                    color: "#7c6fff",
+                  }}
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    terminal
+                  </span>
+                </div>
                 {category}
               </h3>
-              <div className="space-y-3">
-                {catSkills.map((skill) => (
-                  <div key={skill.id}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-slate-300 font-medium">{skill.skillName}</span>
-                      <span className="text-xs text-slate-500">{PROFICIENCY_LABELS[skill.proficiency] ?? 'Unknown'}</span>
-                    </div>
+
+              {/* Flex Wrap Skill Tags */}
+              <div className="flex flex-wrap gap-2.5">
+                {catSkills.map((skill) => {
+                  const color =
+                    PROFICIENCY_COLORS[skill.proficiency] ?? "#3b2bee";
+                  const label =
+                    PROFICIENCY_LABELS[skill.proficiency] ?? "Unknown";
+
+                  return (
                     <div
-                      className="h-1.5 rounded-full overflow-hidden"
-                      style={{ background: 'rgba(255,255,255,0.06)' }}
+                      key={skill.id}
+                      className="group flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/5 cursor-default"
+                      style={{
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.05)",
+                      }}
                     >
-                      <div
-                        className="h-full rounded-full transition-all"
+                      {/* Glowing Dot for Proficiency Level */}
+                      <span
+                        className="size-1.5 rounded-full"
                         style={{
-                          width: `${((skill.proficiency + 1) / 5) * 100}%`,
-                          background: PROFICIENCY_COLORS[skill.proficiency] ?? '#3b2bee',
+                          background: color,
+                          boxShadow: `0 0 6px ${color}`,
                         }}
                       />
+
+                      {/* Skill Name */}
+                      <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">
+                        {skill.skillName}
+                      </span>
+
+                      {/* Subtle Proficiency Text */}
+                      {/* <span
+                        className="text-[10px] font-bold uppercase tracking-wider opacity-80"
+                        style={{ color: color }}
+                      >
+                        {label}
+                      </span> */}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
