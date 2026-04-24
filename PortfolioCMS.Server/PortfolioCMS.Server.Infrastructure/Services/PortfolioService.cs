@@ -105,7 +105,7 @@ namespace PortfolioCMS.Server.Infrastructure.Services
                     ImageUrl = profile.ImageUrl,
                     ResumeUrl = profile.ResumeUrl,
                     Location = profile.Location,
-                    DateOfBirth = (DateOnly)profile.DateOfBirth
+                    DateOfBirth = profile.DateOfBirth ?? DateOnly.MinValue
                 },
                 Skills = SkillMapper.ToResponseList(skills),
                 Educations = EducationMapper.ToResponseList(educations),
