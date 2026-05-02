@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth, fetchWithAuthMutation, uploadFile } from "@/lib/api";
+import { renderMarkdown } from "@/lib/markdown";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -34,57 +35,6 @@ import {
 } from "lucide-react";
 
 type Category = { id: string; name: string };
-
-function renderMarkdown(md: string): string {
-  let html = md
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(
-      /^### (.+)$/gm,
-      '<h3 class="text-lg font-bold text-white/90 mt-6 mb-2">$1</h3>',
-    )
-    .replace(
-      /^## (.+)$/gm,
-      '<h2 class="text-xl font-bold text-white/90 mt-8 mb-3">$1</h2>',
-    )
-    .replace(
-      /^# (.+)$/gm,
-      '<h1 class="text-2xl font-bold text-white/90 mt-8 mb-4">$1</h1>',
-    )
-    .replace(
-      /^&gt; (.+)$/gm,
-      '<blockquote class="border-l-4 border-violet-500 pl-4 text-white/50 italic my-4 py-1">$1</blockquote>',
-    )
-    .replace(/^---$/gm, '<hr class="border-white/10 my-6" />')
-    .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
-    .replace(
-      /\*\*(.+?)\*\*/g,
-      '<strong class="font-semibold text-white/95">$1</strong>',
-    )
-    .replace(/\*(.+?)\*/g, '<em class="italic text-white/75">$1</em>')
-    .replace(
-      /`([^`]+)`/g,
-      '<code class="px-1.5 py-0.5 rounded bg-white/8 text-violet-300 font-mono text-[13px]">$1</code>',
-    )
-    .replace(
-      /\[(.+?)\]\((.+?)\)/g,
-      '<a href="$2" class="text-violet-400 hover:text-violet-300 underline underline-offset-2 transition-colors" target="_blank" rel="noreferrer">$1</a>',
-    )
-    .replace(/^\* (.+)$/gm, '<li class="ml-4 list-disc text-white/70">$1</li>')
-    .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc text-white/70">$1</li>')
-    .replace(
-      /^\d+\. (.+)$/gm,
-      '<li class="ml-4 list-decimal text-white/70">$1</li>',
-    )
-    .replace(
-      /```[\w]*\n([\s\S]*?)```/g,
-      '<pre class="bg-white/5 border border-white/8 rounded-lg p-4 my-4 overflow-x-auto"><code class="font-mono text-sm text-emerald-300">$1</code></pre>',
-    )
-    .replace(/\n\n/g, '</p><p class="text-white/65 leading-relaxed my-3">')
-    .replace(/\n/g, "<br/>");
-  return `<p class="text-white/65 leading-relaxed my-3">${html}</p>`;
-}
 
 const toSlug = (title: string) =>
   title

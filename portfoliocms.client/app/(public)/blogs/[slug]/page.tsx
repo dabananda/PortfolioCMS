@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getBlogPost, getBlogPosts } from "../../lib/api";
+import { renderMarkdown } from "@/lib/markdown";
 import type { BlogPost } from "../../types/portfolio";
 import Link from "next/link";
 import Image from "next/image";
@@ -179,6 +180,7 @@ export default function BlogPostPage() {
               src={post.imageUrl}
               alt={post.title}
               fill
+              sizes="(max-width: 768px) 100vw, 1024px"
               className="object-cover"
             />
           </div>
@@ -189,7 +191,7 @@ export default function BlogPostPage() {
       <div className="max-w-4xl mx-auto px-4 md:px-10 pb-20">
         <article
           className="prose-dark"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(post.content) }}
         />
 
         <div
@@ -243,6 +245,7 @@ export default function BlogPostPage() {
                         src={related.imageUrl}
                         alt={related.title}
                         fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     </div>
